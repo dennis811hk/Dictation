@@ -1,13 +1,14 @@
 {
   "background_color": "#ffffff",
+  "description": "學生默書溫習小幫手",
   "dir": "ltr",
   "display": "standalone",
   "name": "dictationapp.vercel",
   "orientation": "any",
   "scope": "/",
   "short_name": "dictationapp.vercel",
+  "start_url": "/",
   "theme_color": "#ffffff",
-  "description": "學生默書溫習小幫手",
   "icons": [
     {
       "src": "/icons/icon-192.png",
