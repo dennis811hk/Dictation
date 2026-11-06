@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "dictationapp.vercel",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "dictationapp.vercel",
+  "start_url": "/",
+  "theme_color": "#ffffff"
+}
