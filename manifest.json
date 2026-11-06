@@ -6,7 +6,18 @@
   "orientation": "any",
   "scope": "/",
   "short_name": "dictationapp.vercel",
-  "start_url": "/",
-  "theme_color": "#ffffff"
-"description": "學生默書溫習小幫手"
-} 
+  "theme_color": "#ffffff",
+  "description": "學生默書溫習小幫手",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
