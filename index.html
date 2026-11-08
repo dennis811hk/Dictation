@@ -146,7 +146,7 @@
             </button>
         </div>
 
-        <!-- 畫面 2：默書進行中（已隱藏當前聆聽句文字，防止偷看） -->
+        <!-- 畫面 2：默書進行中 -->
         <div id="dictation-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-6">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 段 / 共 5 段</span>
@@ -172,7 +172,7 @@
             </div>
         </div>
 
-        <!-- 畫面 3：結算畫面（支援中英文、多張相片紅筆批改） -->
+        <!-- 畫面 3：結算畫面 -->
         <div id="result-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
             <div class="text-center py-4">
                 <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -286,7 +286,7 @@
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v7';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v8';
 
         let currentLanguage = 'en'; // 'en' 或 'zh'
 
@@ -378,7 +378,7 @@
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerText = "請在下方貼上中文詞語或句子，支援以每一個標點符號（，、。！？；）自動分句停頓。";
+                inputHint.innerText = "請在下方貼上中文詞語或句子，支援以每個標點符號（，、。！？；）自動分句換行。";
                 inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課，讓我比以前更愛上體育課。";
             }
         }
@@ -699,7 +699,7 @@
                     const result = await callGeminiOCR(base64Data);
 
                     if (result.success) {
-                        accumulatedOCRTextResults.push(strictDeduplicateAndSort(result.text));
+                        accumulatedOCRTextResults.push(formatOCRResultText(result.text));
                         showOcrStatus("分析完成！", "正在處理下一張圖片...", false);
                         setTimeout(() => {
                             currentFileIndex++;
@@ -721,7 +721,7 @@
             try {
                 const result = await callGeminiOCR(lastOcrContext.base64Data);
                 if (result.success) {
-                    accumulatedOCRTextResults.push(strictDeduplicateAndSort(result.text));
+                    accumulatedOCRTextResults.push(formatOCRResultText(result.text));
                     hideOcrStatus();
                     currentFileIndex++;
                     processNextFileForCrop();
@@ -741,7 +741,11 @@
 Extract Chinese dictation sentences or vocabulary words from the image.
 CRITICAL INSTRUCTIONS:
 1. Fix all typos and format correctly.
-2. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.`;
+2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line, just like:
+1. 星期三下午，
+我上了一節難忘的體育課，
+讓我比以前更愛上體育課。
+3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.`;
             } else {
                 systemPrompt = `You are an expert English teacher for primary students in Hong Kong.
 Extract dictation sentences from the image carefully.
@@ -806,23 +810,38 @@ CRITICAL INSTRUCTIONS:
             return { success: false, error: classifyGeminiError(null, null) };
         }
 
-        function strictDeduplicateAndSort(text) {
+        // 格式化 OCR 結果，確保中文在標點符號後自動換行
+        function formatOCRResultText(text) {
             let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            let items = [];
+            let formattedLines = [];
+            
             lines.forEach(line => {
-                const match = line.match(/^([0-9]+)[\.\)]\s*(.*)$/);
-                if (match) {
-                    items.push({ num: parseInt(match[1], 10), content: match[2].trim() });
-                } else if (items.length > 0) {
-                    items[items.length - 1].content += " " + line;
+                let clean = line.replace(/^\d+[\.\)]\s*/, '').trim();
+                if (!clean) return;
+
+                if (currentLanguage === 'zh') {
+                    // 在每個中文標點符號後加入換行
+                    let subParts = clean.split(/([，、。！？；]+)/);
+                    let currentStr = "";
+                    for (let i = 0; i < subParts.length; i++) {
+                        currentStr += subParts[i];
+                        if (/^[，、。！？；]+$/.test(subParts[i])) {
+                            if (currentStr.trim().length > 0) {
+                                formattedLines.push(currentStr.trim());
+                            }
+                            currentStr = "";
+                        }
+                    }
+                    if (currentStr.trim().length > 0) {
+                        formattedLines.push(currentStr.trim());
+                    }
+                } else {
+                    formattedLines.push(clean);
                 }
             });
-            let uniqueMap = new Map();
-            items.forEach(item => {
-                let norm = item.content.toLowerCase().replace(/[^a-z\u4e00-\u9fa5]/g, '');
-                if (norm.length >= 1) uniqueMap.set(norm, item.content);
-            });
-            return Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
+
+            // 重新編號
+            return formattedLines.map((s, idx) => (idx + 1) + ". " + s.replace(/^\d+[\.\)]\s*/, '')).join('\n');
         }
 
         function blobToBase64(blob) {
@@ -845,19 +864,13 @@ CRITICAL INSTRUCTIONS:
 
         function reindexAndAppendText(newTextString) {
             const existingText = inputWords.value.trim();
-            let allSentences = existingText ? existingText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l=>l) : [];
+            let allLines = existingText ? existingText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l=>l) : [];
             let newLines = newTextString.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l=>l);
-            allSentences = [...allSentences, ...newLines];
+            allLines = [...allLines, ...newLines];
 
-            let uniqueMap = new Map();
-            allSentences.forEach(s => {
-                let key = s.toLowerCase().replace(/[^a-z\u4e00-\u9fa5]/g, '');
-                if (key.length >= 1) uniqueMap.set(key, s);
-            });
-
-            inputWords.value = Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
+            inputWords.value = allLines.map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
-            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個項目。");
+            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個短句。");
         }
 
         // ===== 智能斷句與標點符號分隔引擎（支援每個標點獨立停頓） =====
