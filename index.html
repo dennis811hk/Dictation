@@ -741,10 +741,7 @@
 Extract Chinese dictation sentences or vocabulary words from the image.
 CRITICAL INSTRUCTIONS:
 1. Fix all typos and format correctly.
-2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line, just like:
-1. 星期三下午，
-我上了一節難忘的體育課，
-讓我比以前更愛上體育課。
+2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.
 3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.`;
             } else {
                 systemPrompt = `You are an expert English teacher for primary students in Hong Kong.
@@ -810,8 +807,18 @@ CRITICAL INSTRUCTIONS:
             return { success: false, error: classifyGeminiError(null, null) };
         }
 
-        // 格式化 OCR 結果，確保中文在標點符號後自動換行
+        // 智慧語言自動偵測與格式化
         function formatOCRResultText(text) {
+            // 計算中文字與英文字母數量以自動判斷語種
+            const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
+
+            if (chineseChars > englishChars) {
+                setLanguage('zh');
+            } else if (englishChars >= chineseChars && englishChars > 0) {
+                setLanguage('en');
+            }
+
             let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let formattedLines = [];
             
@@ -840,7 +847,6 @@ CRITICAL INSTRUCTIONS:
                 }
             });
 
-            // 重新編號
             return formattedLines.map((s, idx) => (idx + 1) + ". " + s.replace(/^\d+[\.\)]\s*/, '')).join('\n');
         }
 
@@ -870,7 +876,7 @@ CRITICAL INSTRUCTIONS:
 
             inputWords.value = allLines.map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
-            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個短句。");
+            showAlert("Gemini 解析完成！已自動切換為「" + (currentLanguage === 'zh' ? '中文' : '英文') + "默書」模式，並加入 " + newLines.length + " 個段落。");
         }
 
         // ===== 智能斷句與標點符號分隔引擎（支援每個標點獨立停頓） =====
