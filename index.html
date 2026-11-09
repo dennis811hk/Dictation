@@ -194,7 +194,7 @@
                 <p id="result-summary" class="text-sm text-slate-500 mt-1">表現優秀！</p>
             </div>
 
-            <!-- AI 拍照紅筆批改按鈕（直接觸發檔案選取） -->
+            <!-- AI 拍照紅筆批改區（支援連續拍攝多張） -->
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
                 <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -202,8 +202,9 @@
                     </svg>
                     <span>Gemini 拍照紅筆批改與比對</span>
                 </div>
-                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照或上傳多張相片，AI 將自動與原標準答案比對並標註錯別字。</p>
+                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照（支援連續拍攝多頁）或上傳多張相片，AI 將自動與標準答案比對並標註錯別字。</p>
 
+                <!-- 拍照與上傳按鈕 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="relative overflow-hidden">
                         <input type="file" id="grading-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
@@ -212,7 +213,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <span>現場拍照批改</span>
+                            <span>連續拍照批改 📸</span>
                         </button>
                     </div>
 
@@ -222,9 +223,18 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span>上傳多張相片批改</span>
+                            <span>上傳多張相片 🖼️</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- 已拍攝/上傳相片預覽清單 -->
+                <div id="grading-preview-container" class="hidden space-y-2 pt-1">
+                    <p class="text-[11px] font-semibold text-indigo-800">已選取 <span id="grading-photo-count">0</span> 張作業相片：</p>
+                    <div id="grading-thumbnails" class="flex flex-wrap gap-2"></div>
+                    <button type="button" id="btn-submit-grading" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl transition shadow-xs text-xs flex items-center justify-center space-x-1">
+                        <span>✨ 開始執行 AI 紅筆批改</span>
+                    </button>
                 </div>
 
                 <!-- 批改狀態指示 -->
@@ -309,7 +319,7 @@
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v11';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v12';
 
         let currentLanguage = 'en'; // 'en' 或 'zh'
 
@@ -337,6 +347,11 @@
         const btnClearAll = document.getElementById('btn-clear-all');
         const gradingCamera = document.getElementById('grading-camera');
         const gradingGallery = document.getElementById('grading-gallery');
+        const gradingPreviewContainer = document.getElementById('grading-preview-container');
+        const gradingPhotoCount = document.getElementById('grading-photo-count');
+        const gradingThumbnails = document.getElementById('grading-thumbnails');
+        const btnSubmitGrading = document.getElementById('btn-submit-grading');
+
         const gradingStatusContainer = document.getElementById('grading-status-container');
         const gradingStatusText = document.getElementById('grading-status-text');
         const gradingStatusDetail = document.getElementById('grading-status-detail');
@@ -381,7 +396,7 @@
         let startX = 0, startY = 0;
 
         let lastOcrContext = null;
-        let lastGradingFiles = [];
+        let gradingQueueFiles = []; // 連續拍照累積的相片陣列
 
         // ===== 初始化 =====
         window.addEventListener('DOMContentLoaded', () => {
@@ -978,6 +993,8 @@ CRITICAL INSTRUCTIONS:
             resultSummary.innerText = `已載入 ${originalWords.length} 個標準答案段落，請直接上傳手寫作業進行 AI 批改！`;
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
+            gradingQueueFiles = [];
+            renderGradingThumbnails();
         });
 
         function updateProgress() {
@@ -999,6 +1016,8 @@ CRITICAL INSTRUCTIONS:
                 dictationScreen.classList.add('hidden');
                 resultScreen.classList.remove('hidden');
                 resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！";
+                gradingQueueFiles = [];
+                renderGradingThumbnails();
             }
         });
 
@@ -1022,29 +1041,77 @@ CRITICAL INSTRUCTIONS:
             setupScreen.classList.remove('hidden');
         });
 
-        // ===== AI 拍照紅筆批改功能（修復事件觸發與多張相片上傳） =====
-        gradingCamera.addEventListener('change', handleGradingFiles);
-        gradingGallery.addEventListener('change', handleGradingFiles);
+        // ===== AI 拍照紅筆批改（支援連續拍照與累積多頁） =====
+        gradingCamera.addEventListener('change', handleGradingFilesInput);
+        gradingGallery.addEventListener('change', handleGradingFilesInput);
 
-        async function handleGradingFiles(e) {
+        async function handleGradingFilesInput(e) {
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
             e.target.value = '';
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析手寫字跡與多頁相片中，請稍候...", false);
+            for (let file of files) {
+                const b64 = await fileToBase64(file);
+                gradingQueueFiles.push({
+                    file: file,
+                    base64Data: b64,
+                    mimeType: file.type || "image/jpeg",
+                    url: URL.createObjectURL(file)
+                });
+            }
+
+            renderGradingThumbnails();
+        }
+
+        function renderGradingThumbnails() {
+            if (gradingQueueFiles.length === 0) {
+                gradingPreviewContainer.classList.add('hidden');
+                gradingThumbnails.innerHTML = '';
+                return;
+            }
+
+            gradingPreviewContainer.classList.remove('hidden');
+            gradingPhotoCount.innerText = gradingQueueFiles.length;
+            gradingThumbnails.innerHTML = '';
+
+            gradingQueueFiles.forEach((item, index) => {
+                const wrap = document.createElement('div');
+                wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs group";
+
+                const img = document.createElement('img');
+                img.src = item.url;
+                img.className = "w-full h-full object-cover";
+
+                const delBtn = document.createElement('button');
+                delBtn.type = "button";
+                delBtn.className = "absolute top-0.5 right-0.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center opacity-90 hover:opacity-100 shadow-xs";
+                delBtn.innerHTML = "✕";
+                delBtn.addEventListener('click', () => {
+                    gradingQueueFiles.splice(index, 1);
+                    renderGradingThumbnails();
+                });
+
+                wrap.appendChild(img);
+                wrap.appendChild(delBtn);
+                gradingThumbnails.appendChild(wrap);
+            });
+        }
+
+        btnSubmitGrading.addEventListener('click', async () => {
+            if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或上傳最少一張作業相片！");
+
+            showGradingStatus("AI 正在批改手寫默書...", `步驟 1/2：分析 ${gradingQueueFiles.length} 頁手寫字跡中，請稍候...`, false);
             gradingResultContainer.classList.add('hidden');
 
             try {
-                let base64Images = [];
-                for (let file of files) {
-                    const b64 = await fileToBase64(file);
-                    base64Images.push({ base64Data: b64, mimeType: file.type || "image/jpeg" });
-                }
-                lastGradingFiles = base64Images;
+                let imagesPayload = gradingQueueFiles.map(item => ({
+                    base64Data: item.base64Data,
+                    mimeType: item.mimeType
+                }));
 
-                const result = await callGeminiGradingMulti(base64Images);
+                const result = await callGeminiGradingMulti(imagesPayload);
 
                 if (result.success) {
                     hideGradingStatus();
@@ -1060,13 +1127,17 @@ CRITICAL INSTRUCTIONS:
                 const classified = classifyGeminiError(null, null);
                 showGradingStatus(classified.title, classified.detail, true);
             }
-        }
+        });
 
         btnGradingRetry.addEventListener('click', async () => {
-            if (!lastGradingFiles || lastGradingFiles.length === 0) return;
+            if (gradingQueueFiles.length === 0) return;
             showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
             try {
-                const result = await callGeminiGradingMulti(lastGradingFiles);
+                let imagesPayload = gradingQueueFiles.map(item => ({
+                    base64Data: item.base64Data,
+                    mimeType: item.mimeType
+                }));
+                const result = await callGeminiGradingMulti(imagesPayload);
                 if (result.success) {
                     hideGradingStatus();
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
@@ -1117,8 +1188,8 @@ STANDARD ANSWERS (the correct dictation segments):
 ${standardAnswersJSON}
 
 YOUR TASK:
-1. Look at all the student's handwritten dictation photos provided.
-2. Compare each segment the student wrote against the corresponding standard answer in order.
+1. Look at all the student's handwritten dictation photos provided in order.
+2. Compare each segment the student wrote against the corresponding standard answer.
 3. For each segment, identify: spelling/character mistakes, missing words/characters, extra parts, and punctuation errors.
 4. Return a STRICTLY VALID JSON object with these exact keys:
    - "scoreSummary": a short string like "8/10 正確" or "62 分 — 有 3 個錯別字"
