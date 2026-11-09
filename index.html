@@ -184,7 +184,7 @@
                 <p id="result-summary" class="text-sm text-slate-500 mt-1">表現優秀！</p>
             </div>
 
-            <!-- AI 拍照紅筆批改按鈕（支援相機拍照與多張上傳） -->
+            <!-- AI 拍照紅筆批改按鈕（直接觸發檔案選取） -->
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
                 <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,7 +218,7 @@
                 </div>
 
                 <!-- 批改狀態指示 -->
-                <div id="grading-status-container" class="hidden">
+                <div id="grading-status-container" class="hidden bg-indigo-50 border border-indigo-200 p-3 rounded-xl mt-2">
                     <div class="flex items-center space-x-2 mb-1.5">
                         <svg class="animate-spin h-4 w-4 text-indigo-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -299,7 +299,7 @@
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v9';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v11';
 
         let currentLanguage = 'en'; // 'en' 或 'zh'
 
@@ -996,7 +996,7 @@ CRITICAL INSTRUCTIONS:
             setupScreen.classList.remove('hidden');
         });
 
-        // ===== AI 拍照紅筆批改功能（支援相機與多張相片上傳） =====
+        // ===== AI 拍照紅筆批改功能（修復事件觸發與多張相片上傳） =====
         gradingCamera.addEventListener('change', handleGradingFiles);
         gradingGallery.addEventListener('change', handleGradingFiles);
 
@@ -1055,6 +1055,32 @@ CRITICAL INSTRUCTIONS:
                 showGradingStatus(classified.title, classified.detail, true);
             }
         });
+
+        function showGradingStatus(title, detail, showRetry) {
+            gradingStatusContainer.classList.remove('hidden');
+            gradingStatusText.innerText = title;
+            if (detail) {
+                gradingStatusDetail.innerText = detail;
+            } else {
+                gradingStatusDetail.innerText = "";
+            }
+            if (showRetry) {
+                gradingRetryContainer.classList.remove('hidden');
+                const spin = gradingStatusContainer.querySelector('.animate-spin');
+                if (spin) spin.classList.add('hidden');
+            } else {
+                gradingRetryContainer.classList.add('hidden');
+                const spin = gradingStatusContainer.querySelector('.animate-spin');
+                if (spin) spin.classList.remove('hidden');
+            }
+        }
+
+        function hideGradingStatus() {
+            gradingStatusContainer.classList.add('hidden');
+            gradingRetryContainer.classList.add('hidden');
+            const spin = gradingStatusContainer.querySelector('.animate-spin');
+            if (spin) spin.classList.remove('hidden');
+        }
 
         async function callGeminiGradingMulti(imageArray) {
             const standardAnswersJSON = JSON.stringify(originalWords);
