@@ -107,6 +107,16 @@
                 </div>
             </div>
 
+            <!-- 首頁直接跳轉批改頁按鈕 -->
+            <div>
+                <button type="button" id="btn-goto-grading" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center space-x-2 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>直接跳轉到 AI 批改頁（需選字欄有內容）</span>
+                </button>
+            </div>
+
             <!-- 文字儲存與歷史紀錄管理區 -->
             <div class="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-3">
                 <div class="flex items-center justify-between">
@@ -313,6 +323,7 @@
         const btnLangZh = document.getElementById('btn-lang-zh');
 
         const btnStart = document.getElementById('btn-start');
+        const btnGotoGrading = document.getElementById('btn-goto-grading');
         const cameraUpload = document.getElementById('camera-upload');
         const galleryUpload = document.getElementById('gallery-upload');
         const ocrStatusContainer = document.getElementById('ocr-status-container');
@@ -952,6 +963,21 @@ CRITICAL INSTRUCTIONS:
 
             updateProgress();
             setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+        });
+
+        // ===== 首頁直接跳轉至 AI 批改頁 =====
+        btnGotoGrading.addEventListener('click', () => {
+            const rawText = inputWords.value.trim();
+            if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
+
+            originalWords = parseTextToQueue(rawText);
+            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
+
+            setupScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            resultSummary.innerText = `已載入 ${originalWords.length} 個標準答案段落，請直接上傳手寫作業進行 AI 批改！`;
+            gradingResultContainer.classList.add('hidden');
+            hideGradingStatus();
         });
 
         function updateProgress() {
