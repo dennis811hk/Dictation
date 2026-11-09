@@ -157,13 +157,13 @@
         </div>
 
         <!-- 畫面 2：默書進行中 -->
-        <div id="dictation-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-6">
+        <div id="dictation-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 段 / 共 5 段</span>
                 <button type="button" id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
-            <div class="flex flex-col items-center justify-center py-6 space-y-3">
+            <div class="flex flex-col items-center justify-center py-4 space-y-3">
                 <button type="button" id="btn-play-word" class="w-24 h-24 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center transition shadow-inner">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -172,12 +172,20 @@
                 <span class="text-xs font-medium text-slate-500">點擊喇叭即可「重播一次」</span>
             </div>
 
-            <div class="space-y-3 pt-2">
-                <button type="button" id="btn-next-sentence" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-base">
-                    <span>播下一段</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                    </svg>
+            <!-- 控制按鈕區：上一步與下一步 -->
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-prev-sentence" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-3 rounded-xl transition text-xs flex items-center justify-center space-x-1">
+                    <span>⬅ 播回上一段</span>
+                </button>
+                <button type="button" id="btn-next-sentence" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-3 rounded-xl transition shadow-md shadow-blue-200 text-xs flex items-center justify-center space-x-1">
+                    <span>播下一段 ➔</span>
+                </button>
+            </div>
+
+            <!-- 最後一段專屬：全文快速檢查播放按鈕 -->
+            <div id="full-review-container" class="hidden pt-1">
+                <button type="button" id="btn-full-review" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold py-3 px-4 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 shadow-xs">
+                    <span>🔄 全文快速播放一次檢查</span>
                 </button>
             </div>
         </div>
@@ -194,7 +202,7 @@
                 <p id="result-summary" class="text-sm text-slate-500 mt-1">表現優秀！</p>
             </div>
 
-            <!-- AI 拍照紅筆批改區（支援連續拍照與累積多頁） -->
+            <!-- AI 拍照紅筆批改區（支援連續拍照與壓縮處理） -->
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
                 <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -319,7 +327,7 @@
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v12';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v13';
 
         let currentLanguage = 'en'; // 'en' 或 'zh'
 
@@ -363,7 +371,10 @@
 
         const progressIndicator = document.getElementById('progress-indicator');
         const btnPlayWord = document.getElementById('btn-play-word');
+        const btnPrevSentence = document.getElementById('btn-prev-sentence');
         const btnNextSentence = document.getElementById('btn-next-sentence');
+        const fullReviewContainer = document.getElementById('full-review-container');
+        const btnFullReview = document.getElementById('btn-full-review');
         const btnBackSetup = document.getElementById('btn-back-setup');
         const resultSummary = document.getElementById('result-summary');
         const btnRetryAll = document.getElementById('btn-retry-all');
@@ -396,7 +407,7 @@
         let startX = 0, startY = 0;
 
         let lastOcrContext = null;
-        let gradingQueueFiles = []; // 連續拍照累積的相片陣列
+        let gradingQueueFiles = [];
 
         // ===== 初始化 =====
         window.addEventListener('DOMContentLoaded', () => {
@@ -776,7 +787,6 @@
             let sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
             let sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
 
-            // 智慧縮放到最大 1200px 確保輕量穩定
             let maxDim = 1200;
             let dw = sw, dh = sh;
             if (dw > maxDim || dh > maxDim) {
@@ -1045,11 +1055,34 @@ CRITICAL INSTRUCTIONS:
 
         function updateProgress() {
             progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
+            
+            // 如果是第一段，隱藏「播回上一段」；否則顯示
+            if (currentQueueIndex === 0) {
+                btnPrevSentence.classList.add('invisible');
+            } else {
+                btnPrevSentence.classList.remove('invisible');
+            }
+
+            // 如果是最後一段，顯示「全文快速檢查」按鈕
+            if (currentQueueIndex === dictationQueue.length - 1) {
+                fullReviewContainer.classList.remove('hidden');
+            } else {
+                fullReviewContainer.classList.add('hidden');
+            }
         }
 
         btnPlayWord.addEventListener('click', () => {
             if (dictationQueue[currentQueueIndex]) {
                 speakText(dictationQueue[currentQueueIndex]);
+            }
+        });
+
+        // 播回上一段
+        btnPrevSentence.addEventListener('click', () => {
+            if (currentQueueIndex > 0) {
+                currentQueueIndex--;
+                updateProgress();
+                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
             }
         });
 
@@ -1065,6 +1098,31 @@ CRITICAL INSTRUCTIONS:
                 gradingQueueFiles = [];
                 renderGradingThumbnails();
             }
+        });
+
+        // 全文快速播放檢查
+        btnFullReview.addEventListener('click', () => {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            let idx = 0;
+            const playNextInFull = () => {
+                if (idx < dictationQueue.length) {
+                    const utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
+                    utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2; // 稍快一點作檢查
+                    if (currentLanguage === 'zh') {
+                        utterance.lang = 'zh-HK';
+                    } else {
+                        utterance.lang = 'en-GB';
+                    }
+                    utterance.onend = () => {
+                        idx++;
+                        setTimeout(playNextInFull, 600); // 段落間隔 0.6 秒
+                    };
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+            playNextInFull();
         });
 
         btnBackSetup.addEventListener('click', () => {
