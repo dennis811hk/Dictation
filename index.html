@@ -83,7 +83,7 @@
                 </div>
             </div>
 
-            <!-- 拍照與相冊選擇按鈕區（支援多張相片選取） -->
+            <!-- 拍照與相冊選擇按鈕區 -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="relative overflow-hidden">
                     <input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
@@ -184,7 +184,7 @@
                 <p id="result-summary" class="text-sm text-slate-500 mt-1">表現優秀！</p>
             </div>
 
-            <!-- AI 拍照紅筆批改按鈕（支援多張相片） -->
+            <!-- AI 拍照紅筆批改按鈕（支援相機拍照與多張上傳） -->
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
                 <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,16 +192,29 @@
                     </svg>
                     <span>Gemini 拍照紅筆批改與比對</span>
                 </div>
-                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業（支援多張相片）拍照上傳，AI 將自動與原標準答案比對並標註錯別字。</p>
+                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照或上傳多張相片，AI 將自動與原標準答案比對並標註錯別字。</p>
 
-                <div class="relative overflow-hidden">
-                    <input type="file" id="grading-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                    <button type="button" id="grading-upload-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition shadow-sm text-sm flex items-center justify-center space-x-2 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        </svg>
-                        <span>拍攝／上傳多張手寫默書本批改</span>
-                    </button>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="relative overflow-hidden">
+                        <input type="file" id="grading-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                        <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-2 rounded-xl transition shadow-sm text-xs flex items-center justify-center space-x-1.5 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>現場拍照批改</span>
+                        </button>
+                    </div>
+
+                    <div class="relative overflow-hidden">
+                        <input type="file" id="grading-gallery" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                        <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-2 rounded-xl transition shadow-sm text-xs flex items-center justify-center space-x-1.5 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>上傳多張相片批改</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 批改狀態指示 -->
@@ -286,7 +299,7 @@
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v8';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v9';
 
         let currentLanguage = 'en'; // 'en' 或 'zh'
 
@@ -311,7 +324,8 @@
 
         const btnSelectAll = document.getElementById('btn-select-all');
         const btnClearAll = document.getElementById('btn-clear-all');
-        const gradingUpload = document.getElementById('grading-upload');
+        const gradingCamera = document.getElementById('grading-camera');
+        const gradingGallery = document.getElementById('grading-gallery');
         const gradingStatusContainer = document.getElementById('grading-status-container');
         const gradingStatusText = document.getElementById('grading-status-text');
         const gradingStatusDetail = document.getElementById('grading-status-detail');
@@ -807,9 +821,7 @@ CRITICAL INSTRUCTIONS:
             return { success: false, error: classifyGeminiError(null, null) };
         }
 
-        // 智慧語言自動偵測與格式化
         function formatOCRResultText(text) {
-            // 計算中文字與英文字母數量以自動判斷語種
             const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
             const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
 
@@ -827,7 +839,6 @@ CRITICAL INSTRUCTIONS:
                 if (!clean) return;
 
                 if (currentLanguage === 'zh') {
-                    // 在每個中文標點符號後加入換行
                     let subParts = clean.split(/([，、。！？；]+)/);
                     let currentStr = "";
                     for (let i = 0; i < subParts.length; i++) {
@@ -879,7 +890,6 @@ CRITICAL INSTRUCTIONS:
             showAlert("Gemini 解析完成！已自動切換為「" + (currentLanguage === 'zh' ? '中文' : '英文') + "默書」模式，並加入 " + newLines.length + " 個段落。");
         }
 
-        // ===== 智能斷句與標點符號分隔引擎（支援每個標點獨立停頓） =====
         function parseTextToQueue(rawText) {
             let rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let queue = [];
@@ -889,7 +899,6 @@ CRITICAL INSTRUCTIONS:
                 if (!cleanLine) return;
 
                 if (currentLanguage === 'zh') {
-                    // 中文：嚴格按照每一個標點符號（，、。！？；）切分段落
                     let parts = cleanLine.split(/([，、。！？；]+)/);
                     let currentSeg = "";
                     for (let i = 0; i < parts.length; i++) {
@@ -905,7 +914,6 @@ CRITICAL INSTRUCTIONS:
                         queue.push(currentSeg.trim());
                     }
                 } else {
-                    // 英文：根據標點符號切分
                     let parts = cleanLine.split(/([,.?!;]+)/);
                     let currentSeg = "";
                     for (let i = 0; i < parts.length; i++) {
@@ -988,41 +996,18 @@ CRITICAL INSTRUCTIONS:
             setupScreen.classList.remove('hidden');
         });
 
-        // ===== AI 拍照紅筆批改功能（支援多張相片、中英文通用） =====
-        function showGradingStatus(title, detail, showRetry) {
-            gradingStatusContainer.classList.remove('hidden');
-            gradingStatusText.innerText = title;
-            if (detail) {
-                gradingStatusDetail.innerText = detail;
-            } else {
-                gradingStatusDetail.innerText = "";
-            }
-            if (showRetry) {
-                gradingRetryContainer.classList.remove('hidden');
-                const spin = gradingStatusContainer.querySelector('.animate-spin');
-                if (spin) spin.classList.add('hidden');
-            } else {
-                gradingRetryContainer.classList.add('hidden');
-                const spin = gradingStatusContainer.querySelector('.animate-spin');
-                if (spin) spin.classList.remove('hidden');
-            }
-        }
+        // ===== AI 拍照紅筆批改功能（支援相機與多張相片上傳） =====
+        gradingCamera.addEventListener('change', handleGradingFiles);
+        gradingGallery.addEventListener('change', handleGradingFiles);
 
-        function hideGradingStatus() {
-            gradingStatusContainer.classList.add('hidden');
-            gradingRetryContainer.classList.add('hidden');
-            const spin = gradingStatusContainer.querySelector('.animate-spin');
-            if (spin) spin.classList.remove('hidden');
-        }
-
-        gradingUpload.addEventListener('change', async (e) => {
+        async function handleGradingFiles(e) {
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
             e.target.value = '';
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            showGradingStatus("AI 正在批改多張手寫默書...", "步驟 1/2：分析手寫字跡與多頁相片中，請稍候...", false);
+            showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析手寫字跡與多頁相片中，請稍候...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -1049,11 +1034,11 @@ CRITICAL INSTRUCTIONS:
                 const classified = classifyGeminiError(null, null);
                 showGradingStatus(classified.title, classified.detail, true);
             }
-        });
+        }
 
         btnGradingRetry.addEventListener('click', async () => {
             if (!lastGradingFiles || lastGradingFiles.length === 0) return;
-            showGradingStatus("正在重試批改...", "重新傳送多張圖片進行批改", false);
+            showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
             try {
                 const result = await callGeminiGradingMulti(lastGradingFiles);
                 if (result.success) {
