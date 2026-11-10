@@ -336,7 +336,7 @@
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span>";
                 inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課……";
             }
         }
@@ -903,7 +903,7 @@ INSTRUCTIONS:
                     try {
                         response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
                         if (response.ok) break;
-                        if (response.status === 503 || response.status === 429) {
+                        if (response.status === 503 || response.status === 429 || response.status === 500) {
                             retries--;
                             await new Promise(r => setTimeout(r, 2000));
                             continue;
@@ -918,16 +918,9 @@ INSTRUCTIONS:
                 if (response && response.ok) {
                     try {
                         const result = await response.json();
-                        let candidate = null;
-                        if (result.candidates && result.candidates[0]) {
-                            candidate = result.candidates[0];
-                        } else if (result.content && result.content.parts) {
-                            candidate = result;
-                        }
-
                         let textResp = "";
-                        if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                            textResp = candidate.content.parts[0].text;
+                        if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                            textResp = result.candidates[0].content.parts[0].text;
                         } else if (result.text) {
                             textResp = result.text;
                         }
@@ -940,7 +933,7 @@ INSTRUCTIONS:
                             }
                         }
                     } catch (parseErr) {
-                        console.warn("批改結果解析 JSON 失敗...");
+                        console.warn("批改結果解析 JSON 失敗...", parseErr);
                     }
                 }
             }
