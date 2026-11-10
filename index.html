@@ -28,7 +28,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">粵漢雙語 版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">粵漢雙語 Pro 版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -64,12 +64,12 @@
             </div>
 
             <!-- Gemini 視覺載入進度提示框 -->
-            <div id="ocr-status-container" class="hidden bg-blue-50 border border-blue-100 p-3.5 rounded-xl">
-                <div class="flex items-center space-x-2 mb-1.5">
+            <div id="ocr-status-container" class="hidden bg-blue-50 border border-blue-100 p-3.5 rounded-xl space-y-2">
+                <div class="flex items-center space-x-2">
                     <span id="ocr-status-text" class="text-xs font-semibold text-blue-700">Gemini 正在智慧解析圖片文字...</span>
                 </div>
                 <p id="ocr-status-detail" class="text-[10px] text-blue-600 leading-relaxed"></p>
-                <div id="ocr-retry-container" class="hidden mt-2">
+                <div id="ocr-retry-container" class="hidden pt-1">
                     <button type="button" id="btn-ocr-retry" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
                 </div>
             </div>
@@ -77,14 +77,14 @@
             <!-- 拍照與相冊選擇按鈕區 -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="relative overflow-hidden">
-                    <input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                    <input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
                     <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
                         <span>📷 現場拍照辨識</span>
                     </button>
                 </div>
 
                 <div class="relative overflow-hidden">
-                    <input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                    <input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
                     <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
                         <span>🖼️ 上傳多張相片</span>
                     </button>
@@ -178,14 +178,14 @@
                 <!-- 拍照與上傳按鈕 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="relative overflow-hidden">
-                        <input type="file" id="grading-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                        <input type="file" id="grading-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
                         <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-2 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 pointer-events-none">
                             <span>📸 連續拍照批改</span>
                         </button>
                     </div>
 
                     <div class="relative overflow-hidden">
-                        <input type="file" id="grading-gallery" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                        <input type="file" id="grading-gallery" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
                         <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-2 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 pointer-events-none">
                             <span>🖼️ 上傳多張相片</span>
                         </button>
@@ -254,7 +254,7 @@
         }
 
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v27';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v28';
         let currentLanguage = 'en';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -688,7 +688,16 @@ Look at the image carefully and adhere strictly to these rules:
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
-            utterance.lang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
+            
+            const targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
+            utterance.lang = targetLang;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (voices && voices.length > 0) {
+                const found = voices.find(v => v.lang === targetLang || v.lang.replace('_','-') === targetLang || v.lang.startsWith(currentLanguage));
+                if (found) utterance.voice = found;
+            }
+
             window.speechSynthesis.speak(utterance);
         }
 
@@ -872,7 +881,7 @@ INSTRUCTIONS:
 
             let parts = [{ text: "Grade the student's handwritten dictation photos in exact sequential order. Return valid JSON only." }];
             base64List.forEach(item => {
-                parts.push({ inlineData: { mimeType: item.mimeType, data: item.data } });
+                parts.push({ inlineData: { mimeType: item.mimeType || "image/jpeg", data: item.data } });
             });
 
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -905,22 +914,35 @@ INSTRUCTIONS:
                 }
 
                 if (response && response.ok) {
-                    const result = await response.json();
-                    const candidate = result.candidates && result.candidates[0];
-                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                        let textResp = candidate.content.parts[0].text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                        try {
+                    try {
+                        const result = await response.json();
+                        let candidate = null;
+                        if (result.candidates && result.candidates[0]) {
+                            candidate = result.candidates[0];
+                        } else if (result.content && result.content.parts) {
+                            candidate = result;
+                        }
+
+                        let textResp = "";
+                        if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                            textResp = candidate.content.parts[0].text;
+                        } else if (result.text) {
+                            textResp = result.text;
+                        }
+
+                        if (textResp) {
+                            textResp = textResp.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
                             const parsed = JSON.parse(textResp);
                             if (parsed && (parsed.scoreSummary || parsed.htmlDetails)) {
                                 return { success: true, data: parsed };
                             }
-                        } catch (e) {
-                            return { success: true, data: { scoreSummary: "批改完成", htmlDetails: "<pre class='text-[10px]'>" + textResp + "</pre>" } };
                         }
+                    } catch (parseErr) {
+                        console.warn("批改結果解析 JSON 失敗...");
                     }
                 }
             }
-            return { success: false, error: { title: "伺服器忙碌", detail: "請點擊重試按鈕再試一次。" } };
+            return { success: false, error: { title: "伺服器忙碌或無回應", detail: "請確認作業照片清晰，然後點擊重試按鈕再試一次。" } };
         }
     </script>
 </body>
