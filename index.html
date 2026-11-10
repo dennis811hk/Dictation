@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - 粵漢雙語全功能版</title>
+    <title>自動默書小幫手 - 粵漢雙語全平台穩健版</title>
     
     <!-- PWA 必要：載入 Manifest 檔案 -->
     <link rel="manifest" href="/manifest.json">
@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">全平台穩定版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Android 8+ 穩定版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -315,99 +315,101 @@
     </div>
 
     <script>
-        // ===== PWA 自動註冊 Service Worker =====
+        // ===== PWA 自動註冊 Service Worker (加入安全防錯) =====
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => { console.log('Service Worker 註冊成功:', reg.scope); })
-                    .catch((err) => { console.log('Service Worker 註冊失敗:', err); });
+                try {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(function(reg) { console.log('SW 註冊成功'); })
+                        .catch(function(err) { console.log('SW 註冊忽略'); });
+                } catch(e) {}
             });
         }
 
         // ===== 核心設定（完全相容 Android 8.0 至最新 Android 17） =====
-        const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v14';
+        var GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
+        var currentGeminiModel = GEMINI_MODELS[0];
+        var STORAGE_KEY = 'my_dictation_saved_lists_v15';
 
-        let currentLanguage = 'en';
+        var currentLanguage = 'en';
 
         // ===== DOM 元素綁定 =====
-        const setupScreen = document.getElementById('setup-screen');
-        const dictationScreen = document.getElementById('dictation-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const inputWords = document.getElementById('input-words');
-        const inputHint = document.getElementById('input-hint');
-        const btnLangEn = document.getElementById('btn-lang-en');
-        const btnLangZh = document.getElementById('btn-lang-zh');
+        var setupScreen = document.getElementById('setup-screen');
+        var dictationScreen = document.getElementById('dictation-screen');
+        var resultScreen = document.getElementById('result-screen');
+        var inputWords = document.getElementById('input-words');
+        var inputHint = document.getElementById('input-hint');
+        var btnLangEn = document.getElementById('btn-lang-en');
+        var btnLangZh = document.getElementById('btn-lang-zh');
 
-        const btnStart = document.getElementById('btn-start');
-        const btnGotoGrading = document.getElementById('btn-goto-grading');
-        const cameraUpload = document.getElementById('camera-upload');
-        const galleryUpload = document.getElementById('gallery-upload');
-        const ocrStatusContainer = document.getElementById('ocr-status-container');
-        const ocrStatusText = document.getElementById('ocr-status-text');
-        const ocrStatusDetail = document.getElementById('ocr-status-detail');
-        const ocrRetryContainer = document.getElementById('ocr-retry-container');
-        const btnOcrRetry = document.getElementById('btn-ocr-retry');
-        const speechSpeedSelect = document.getElementById('speech-speed');
+        var btnStart = document.getElementById('btn-start');
+        var btnGotoGrading = document.getElementById('btn-goto-grading');
+        var cameraUpload = document.getElementById('camera-upload');
+        var galleryUpload = document.getElementById('gallery-upload');
+        var ocrStatusContainer = document.getElementById('ocr-status-container');
+        var ocrStatusText = document.getElementById('ocr-status-text');
+        var ocrStatusDetail = document.getElementById('ocr-status-detail');
+        var ocrRetryContainer = document.getElementById('ocr-retry-container');
+        var btnOcrRetry = document.getElementById('btn-ocr-retry');
+        var speechSpeedSelect = document.getElementById('speech-speed');
 
-        const btnSelectAll = document.getElementById('btn-select-all');
-        const btnClearAll = document.getElementById('btn-clear-all');
-        const gradingCamera = document.getElementById('grading-camera');
-        const gradingGallery = document.getElementById('grading-gallery');
-        const gradingPreviewContainer = document.getElementById('grading-preview-container');
-        const gradingPhotoCount = document.getElementById('grading-photo-count');
-        const gradingThumbnails = document.getElementById('grading-thumbnails');
-        const btnSubmitGrading = document.getElementById('btn-submit-grading');
+        var btnSelectAll = document.getElementById('btn-select-all');
+        var btnClearAll = document.getElementById('btn-clear-all');
+        var gradingCamera = document.getElementById('grading-camera');
+        var gradingGallery = document.getElementById('grading-gallery');
+        var gradingPreviewContainer = document.getElementById('grading-preview-container');
+        var gradingPhotoCount = document.getElementById('grading-photo-count');
+        var gradingThumbnails = document.getElementById('grading-thumbnails');
+        var btnSubmitGrading = document.getElementById('btn-submit-grading');
 
-        const gradingStatusContainer = document.getElementById('grading-status-container');
-        const gradingStatusText = document.getElementById('grading-status-text');
-        const gradingStatusDetail = document.getElementById('grading-status-detail');
-        const gradingRetryContainer = document.getElementById('grading-retry-container');
-        const btnGradingRetry = document.getElementById('btn-grading-retry');
-        const gradingResultContainer = document.getElementById('grading-result-container');
-        const gradingScore = document.getElementById('grading-score');
-        const gradingDetails = document.getElementById('grading-details');
+        var gradingStatusContainer = document.getElementById('grading-status-container');
+        var gradingStatusText = document.getElementById('grading-status-text');
+        var gradingStatusDetail = document.getElementById('grading-status-detail');
+        var gradingRetryContainer = document.getElementById('grading-retry-container');
+        var btnGradingRetry = document.getElementById('btn-grading-retry');
+        var gradingResultContainer = document.getElementById('grading-result-container');
+        var gradingScore = document.getElementById('grading-score');
+        var gradingDetails = document.getElementById('grading-details');
 
-        const progressIndicator = document.getElementById('progress-indicator');
-        const btnPlayWord = document.getElementById('btn-play-word');
-        const btnPrevSentence = document.getElementById('btn-prev-sentence');
-        const btnNextSentence = document.getElementById('btn-next-sentence');
-        const fullReviewContainer = document.getElementById('full-review-container');
-        const btnFullReview = document.getElementById('btn-full-review');
-        const btnBackSetup = document.getElementById('btn-back-setup');
-        const resultSummary = document.getElementById('result-summary');
-        const btnRetryAll = document.getElementById('btn-retry-all');
-        const btnRestart = document.getElementById('btn-restart');
+        var progressIndicator = document.getElementById('progress-indicator');
+        var btnPlayWord = document.getElementById('btn-play-word');
+        var btnPrevSentence = document.getElementById('btn-prev-sentence');
+        var btnNextSentence = document.getElementById('btn-next-sentence');
+        var fullReviewContainer = document.getElementById('full-review-container');
+        var btnFullReview = document.getElementById('btn-full-review');
+        var btnBackSetup = document.getElementById('btn-back-setup');
+        var resultSummary = document.getElementById('result-summary');
+        var btnRetryAll = document.getElementById('btn-retry-all');
+        var btnRestart = document.getElementById('btn-restart');
 
-        const customModal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalClose = document.getElementById('modal-close');
-        const btnSaveCurrent = document.getElementById('btn-save-current');
-        const savedListsContainer = document.getElementById('saved-lists-container');
+        var customModal = document.getElementById('custom-modal');
+        var modalMessage = document.getElementById('modal-message');
+        var modalClose = document.getElementById('modal-close');
+        var btnSaveCurrent = document.getElementById('btn-save-current');
+        var savedListsContainer = document.getElementById('saved-lists-container');
 
-        const cropModal = document.getElementById('crop-modal');
-        const cropModalTitle = document.getElementById('crop-modal-title');
-        const cropCanvas = document.getElementById('crop-canvas');
-        const ctxCrop = cropCanvas.getContext('2d');
-        const btnSkipCrop = document.getElementById('btn-skip-crop');
-        const btnConfirmCrop = document.getElementById('btn-confirm-crop');
+        var cropModal = document.getElementById('crop-modal');
+        var cropModalTitle = document.getElementById('crop-modal-title');
+        var cropCanvas = document.getElementById('crop-canvas');
+        var ctxCrop = cropCanvas ? cropCanvas.getContext('2d') : null;
+        var btnSkipCrop = document.getElementById('btn-skip-crop');
+        var btnConfirmCrop = document.getElementById('btn-confirm-crop');
 
         // ===== 狀態變數 =====
-        let originalWords = [];
-        let dictationQueue = [];
-        let currentQueueIndex = 0;
+        var originalWords = [];
+        var dictationQueue = [];
+        var currentQueueIndex = 0;
 
-        let pendingFiles = [];
-        let currentFileIndex = 0;
-        let accumulatedOCRTextResults = [];
-        let currentImgObj = null;
-        let cropRect = { x: 0, y: 0, width: 0, height: 0 };
-        let isDragging = false;
-        let startX = 0, startY = 0;
+        var pendingFiles = [];
+        var currentFileIndex = 0;
+        var accumulatedOCRTextResults = [];
+        var currentImgObj = null;
+        var cropRect = { x: 0, y: 0, width: 0, height: 0 };
+        var isDragging = false;
+        var startX = 0, startY = 0;
 
-        let lastOcrContext = null;
-        let gradingQueueFiles = [];
+        var lastOcrContext = null;
+        var gradingQueueFiles = [];
 
         // ===== 初始化 =====
         window.addEventListener('DOMContentLoaded', function() {
@@ -447,63 +449,67 @@
         // ===== 儲存機制 =====
         function loadSavedLists() {
             try {
-                const data = localStorage.getItem(STORAGE_KEY);
+                var data = localStorage.getItem(STORAGE_KEY);
                 return data ? JSON.parse(data) : [];
             } catch (e) {
                 return [];
             }
         }
         function saveListsToStorage(lists) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+            } catch (e) {}
         }
 
         function renderSavedLists() {
-            const lists = loadSavedLists();
+            var lists = loadSavedLists();
             if (lists.length === 0) {
                 savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
                 return;
             }
 
             savedListsContainer.innerHTML = '';
-            lists.forEach(function(item, index) {
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
+            for (var i = 0; i < lists.length; i++) {
+                (function(item, index) {
+                    var div = document.createElement('div');
+                    div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
 
-                const titleSpan = document.createElement('span');
-                titleSpan.className = "text-xs font-medium text-slate-700 truncate flex-1 mr-2 cursor-pointer";
-                titleSpan.innerText = (item.lang === 'zh' ? '【中文】' : '【英文】') + ' ' + item.title;
-                titleSpan.addEventListener('click', function() {
-                    inputWords.value = item.content;
-                    if (item.lang) setLanguage(item.lang);
-                    showAlert("已成功載入：「" + item.title + "」");
-                });
+                    var titleSpan = document.createElement('span');
+                    titleSpan.className = "text-xs font-medium text-slate-700 truncate flex-1 mr-2 cursor-pointer";
+                    titleSpan.innerText = (item.lang === 'zh' ? '【中文】' : '【英文】') + ' ' + item.title;
+                    titleSpan.addEventListener('click', function() {
+                        inputWords.value = item.content;
+                        if (item.lang) setLanguage(item.lang);
+                        showAlert("已成功載入：「" + item.title + "」");
+                    });
 
-                const btnDel = document.createElement('button');
-                btnDel.type = "button";
-                btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
-                btnDel.innerHTML = "✕";
-                btnDel.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    let currentLists = loadSavedLists();
-                    currentLists.splice(index, 1);
-                    saveListsToStorage(currentLists);
-                    renderSavedLists();
-                });
+                    var btnDel = document.createElement('button');
+                    btnDel.type = "button";
+                    btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
+                    btnDel.innerHTML = "✕";
+                    btnDel.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var currentLists = loadSavedLists();
+                        currentLists.splice(index, 1);
+                        saveListsToStorage(currentLists);
+                        renderSavedLists();
+                    });
 
-                div.appendChild(titleSpan);
-                div.appendChild(btnDel);
-                savedListsContainer.appendChild(div);
-            });
+                    div.appendChild(titleSpan);
+                    div.appendChild(btnDel);
+                    savedListsContainer.appendChild(div);
+                })(lists[i], i);
+            }
         }
 
         btnSaveCurrent.addEventListener('click', function() {
-            const text = inputWords.value.trim();
+            var text = inputWords.value.trim();
             if (!text) return showAlert("沒有內容可供儲存！");
-            const firstLine = text.split('\n')[0].trim();
-            const defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
-            let titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
+            var firstLine = text.split('\n')[0].trim();
+            var defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
+            var titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
             if (!titleName) return;
-            let lists = loadSavedLists();
+            var lists = loadSavedLists();
             lists.unshift({ id: Date.now(), title: titleName.trim(), content: text, lang: currentLanguage });
             if (lists.length > 20) lists.pop();
             saveListsToStorage(lists);
@@ -512,7 +518,7 @@
         });
 
         // ===== 文本操作按鈕 =====
-        let isAllSelected = false;
+        var isAllSelected = false;
         btnSelectAll.addEventListener('click', function() {
             inputWords.focus();
             if (!isAllSelected) {
@@ -535,46 +541,55 @@
             }
         });
 
-        // ===== 語音發音（安全相容處理，支援 Android 8.0 至最新版） =====
+        // ===== 語音發音（安全防錯處理，支援 Android 8.0 至最新版） =====
         function speakText(text) {
             if (!('speechSynthesis' in window)) return;
             try {
                 window.speechSynthesis.cancel();
             } catch (e) {}
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
-
-            if (currentLanguage === 'zh') {
-                utterance.lang = 'zh-HK';
-                utterance.pitch = 1.0;
-            } else {
-                utterance.lang = 'en-GB';
-                utterance.pitch = 1.0;
-            }
-
             try {
-                const voices = window.speechSynthesis.getVoices();
-                if (voices && voices.length > 0) {
-                    const targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
-                    const found = voices.find(function(v) {
-                        return v.lang === targetLang || (v.lang && v.lang.replace('_','-') === targetLang) || (v.lang && v.lang.startsWith(currentLanguage));
-                    });
-                    if (found) utterance.voice = found;
-                }
-            } catch (e) {}
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
 
-            setTimeout(function() {
+                if (currentLanguage === 'zh') {
+                    utterance.lang = 'zh-HK';
+                    utterance.pitch = 1.0;
+                } else {
+                    utterance.lang = 'en-GB';
+                    utterance.pitch = 1.0;
+                }
+
                 try {
-                    window.speechSynthesis.speak(utterance);
+                    var voices = window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        var targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
+                        for (var i = 0; i < voices.length; i++) {
+                            var v = voices[i];
+                            if (v.lang === targetLang || (v.lang && v.lang.replace('_','-') === targetLang) || (v.lang && v.lang.indexOf(currentLanguage) === 0)) {
+                                utterance.voice = v;
+                                break;
+                            }
+                        }
+                    }
                 } catch (e) {}
-            }, 50);
+
+                setTimeout(function() {
+                    try {
+                        window.speechSynthesis.speak(utterance);
+                    } catch (e) {}
+                }, 50);
+            } catch (e) {}
         }
 
         if ('speechSynthesis' in window) {
             try {
                 window.speechSynthesis.getVoices();
-                window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = function() {
+                        try { window.speechSynthesis.getVoices(); } catch(e) {}
+                    };
+                }
             } catch (e) {}
         }
 
@@ -584,12 +599,12 @@
             maxHeight = maxHeight || 1200;
             quality = quality || 0.8;
             return new Promise(function(resolve, reject) {
-                const reader = new FileReader();
+                var reader = new FileReader();
                 reader.onload = function(e) {
-                    const img = new Image();
+                    var img = new Image();
                     img.onload = function() {
-                        let w = img.width;
-                        let h = img.height;
+                        var w = img.width;
+                        var h = img.height;
                         if (w > maxWidth || h > maxHeight) {
                             if (w / h > maxWidth / maxHeight) {
                                 h = Math.round((h * maxWidth) / w);
@@ -599,10 +614,10 @@
                                 h = maxHeight;
                             }
                         }
-                        const canvas = document.createElement('canvas');
+                        var canvas = document.createElement('canvas');
                         canvas.width = w;
                         canvas.height = h;
-                        const ctx = canvas.getContext('2d');
+                        var ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, w, h);
                         
                         canvas.toBlob(function(blob) {
@@ -610,10 +625,10 @@
                                 reject(new Error("Canvas toBlob failed"));
                                 return;
                             }
-                            const compReader = new FileReader();
+                            var compReader = new FileReader();
                             compReader.onload = function() {
-                                const base64Full = compReader.result;
-                                const base64Data = base64Full.indexOf(',') !== -1 ? base64Full.split(',')[1] : base64Full;
+                                var base64Full = compReader.result;
+                                var base64Data = base64Full.indexOf(',') !== -1 ? base64Full.split(',')[1] : base64Full;
                                 resolve({
                                     base64Data: base64Data,
                                     mimeType: "image/jpeg",
@@ -637,7 +652,7 @@
         galleryUpload.addEventListener('change', handleImageUpload);
 
         function handleImageUpload(e) {
-            const files = e.target.files;
+            var files = e.target.files;
             if (!files || files.length === 0) return;
             pendingFiles = Array.prototype.slice.call(files);
             currentFileIndex = 0;
@@ -653,13 +668,13 @@
                 }
                 return;
             }
-            const file = pendingFiles[currentFileIndex];
+            var file = pendingFiles[currentFileIndex];
             cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
             cropModal.classList.remove('hidden');
 
-            const reader = new FileReader();
+            var reader = new FileReader();
             reader.onload = function(event) {
-                const img = new Image();
+                var img = new Image();
                 img.onload = function() {
                     currentImgObj = img;
                     cropRect = { x: 0, y: 0, width: img.width, height: img.height };
@@ -671,7 +686,7 @@
         }
 
         function drawCropCanvas() {
-            if (!currentImgObj) return;
+            if (!currentImgObj || !ctxCrop) return;
             cropCanvas.width = currentImgObj.width;
             cropCanvas.height = currentImgObj.height;
             ctxCrop.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
@@ -692,33 +707,33 @@
         }
 
         function getCanvasCoords(e) {
-            const rect = cropCanvas.getBoundingClientRect();
-            const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+            var rect = cropCanvas.getBoundingClientRect();
+            var clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+            var clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
             return {
                 x: (clientX - rect.left) * (cropCanvas.width / rect.width),
                 y: (clientY - rect.top) * (cropCanvas.height / rect.height)
             };
         }
 
-        const startDrag = function(e) {
+        var startDrag = function(e) {
             isDragging = true;
-            const coords = getCanvasCoords(e);
+            var coords = getCanvasCoords(e);
             startX = coords.x; startY = coords.y;
             cropRect = { x: startX, y: startY, width: 0, height: 0 };
         };
-        const doDrag = function(e) {
+        var doDrag = function(e) {
             if (!isDragging) return;
-            const coords = getCanvasCoords(e);
-            let w = coords.x - startX, h = coords.y - startY;
-            let rx = startX, ry = startY;
+            var coords = getCanvasCoords(e);
+            var w = coords.x - startX, h = coords.y - startY;
+            var rx = startX, ry = startY;
             if (w < 0) { rx = coords.x; w = Math.abs(w); }
             if (h < 0) { ry = coords.y; h = Math.abs(h); }
             cropRect = { x: rx, y: ry, width: w, height: h };
             drawCropCanvas();
             if(e.type === 'touchmove') e.preventDefault();
         };
-        const endDrag = function() {
+        var endDrag = function() {
             isDragging = false;
             if (cropRect.width < 20 || cropRect.height < 20) {
                 if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
@@ -726,12 +741,14 @@
             }
         };
 
-        cropCanvas.addEventListener('mousedown', startDrag);
-        cropCanvas.addEventListener('mousemove', doDrag);
-        window.addEventListener('mouseup', endDrag);
-        cropCanvas.addEventListener('touchstart', startDrag, {passive: false});
-        cropCanvas.addEventListener('touchmove', doDrag, {passive: false});
-        cropCanvas.addEventListener('touchend', endDrag);
+        if (cropCanvas) {
+            cropCanvas.addEventListener('mousedown', startDrag);
+            cropCanvas.addEventListener('mousemove', doDrag);
+            window.addEventListener('mouseup', endDrag);
+            cropCanvas.addEventListener('touchstart', startDrag, {passive: false});
+            cropCanvas.addEventListener('touchmove', doDrag, {passive: false});
+            cropCanvas.addEventListener('touchend', endDrag);
+        }
 
         btnConfirmCrop.addEventListener('click', function() {
             cropModal.classList.add('hidden');
@@ -748,7 +765,7 @@
             if (!response) {
                 return { type: "network", title: "網路連線失敗", detail: "無法連線到伺服器。請檢查網絡是否正常。" };
             }
-            const status = response.status;
+            var status = response.status;
             if (status === 400 || status === 401 || status === 403) {
                 return { type: "invalid_key", title: "API Key 或授權無效", detail: "請確認 Vercel 後台已正確設定 GEMINI_API_KEY 環境變數。" };
             }
@@ -775,11 +792,11 @@
             }
             if (showRetry) {
                 ocrRetryContainer.classList.remove('hidden');
-                const spin = ocrStatusContainer.querySelector('.animate-spin');
+                var spin = ocrStatusContainer.querySelector('.animate-spin');
                 if (spin) spin.classList.add('hidden');
             } else {
                 ocrRetryContainer.classList.add('hidden');
-                const spin = ocrStatusContainer.querySelector('.animate-spin');
+                var spin = ocrStatusContainer.querySelector('.animate-spin');
                 if (spin) spin.classList.remove('hidden');
             }
         }
@@ -787,23 +804,23 @@
         function hideOcrStatus() {
             ocrStatusContainer.classList.add('hidden');
             ocrRetryContainer.classList.add('hidden');
-            const spin = ocrStatusContainer.querySelector('.animate-spin');
+            var spin = ocrStatusContainer.querySelector('.animate-spin');
             if (spin) spin.classList.remove('hidden');
         }
 
-        async function executeGeminiVision(isSkipped) {
+        function executeGeminiVision(isSkipped) {
             if (!currentImgObj) return;
 
-            let targetCanvas = document.createElement('canvas');
-            let tCtx = targetCanvas.getContext('2d');
+            var targetCanvas = document.createElement('canvas');
+            var tCtx = targetCanvas.getContext('2d');
 
-            let sw = isSkipped || cropRect.width === 0 ? currentImgObj.width : cropRect.width;
-            let sh = isSkipped || cropRect.height === 0 ? currentImgObj.height : cropRect.height;
-            let sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
-            let sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
+            var sw = isSkipped || cropRect.width === 0 ? currentImgObj.width : cropRect.width;
+            var sh = isSkipped || cropRect.height === 0 ? currentImgObj.height : cropRect.height;
+            var sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
+            var sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
 
-            let maxDim = 1200;
-            let dw = sw, dh = sh;
+            var maxDim = 1200;
+            var dw = sw, dh = sh;
             if (dw > maxDim || dh > maxDim) {
                 if (dw / dh > 1) {
                     dh = Math.round((dh * maxDim) / dw);
@@ -820,35 +837,35 @@
 
             showOcrStatus("正在分析圖片中...", "步驟 1/2：圖片辨識進行中，請稍候...", false);
 
-            targetCanvas.toBlob(async function(blob) {
-                try {
-                    const compressed = await compressImageFile(new File([blob], "crop.jpg", { type: "image/jpeg" }));
+            targetCanvas.toBlob(function(blob) {
+                compressImageFile(new File([blob], "crop.jpg", { type: "image/jpeg" })).then(function(compressed) {
                     lastOcrContext = { base64Data: compressed.base64Data, mimeType: "image/jpeg" };
-
-                    const result = await callGeminiOCR(compressed.base64Data);
-
-                    if (result.success) {
-                        accumulatedOCRTextResults.push(formatOCRResultText(result.text));
-                        showOcrStatus("分析完成！", "正在處理下一張圖片...", false);
-                        setTimeout(function() {
-                            currentFileIndex++;
-                            processNextFileForCrop();
-                        }, 400);
-                    } else {
-                        showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
-                    }
-                } catch (err) {
-                    const classified = classifyGeminiError(null, null);
+                    callGeminiOCR(compressed.base64Data).then(function(result) {
+                        if (result.success) {
+                            accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                            showOcrStatus("分析完成！", "正在處理下一張圖片...", false);
+                            setTimeout(function() {
+                                currentFileIndex++;
+                                processNextFileForCrop();
+                            }, 400);
+                        } else {
+                            showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
+                        }
+                    }).catch(function(err) {
+                        var classified = classifyGeminiError(null, null);
+                        showOcrStatus(classified.title, classified.detail, true);
+                    });
+                }).catch(function(err) {
+                    var classified = classifyGeminiError(null, null);
                     showOcrStatus(classified.title, classified.detail, true);
-                }
+                });
             }, 'image/jpeg', 0.8);
         }
 
-        btnOcrRetry.addEventListener('click', async function() {
+        btnOcrRetry.addEventListener('click', function() {
             if (!lastOcrContext) return;
             showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
-            try {
-                const result = await callGeminiOCR(lastOcrContext.base64Data);
+            callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
                 if (result.success) {
                     accumulatedOCRTextResults.push(formatOCRResultText(result.text));
                     hideOcrStatus();
@@ -857,80 +874,92 @@
                 } else {
                     showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
                 }
-            } catch (err) {
-                const classified = classifyGeminiError(null, null);
+            }).catch(function(err) {
+                var classified = classifyGeminiError(null, null);
                 showOcrStatus(classified.title, classified.detail, true);
-            }
+            });
         });
 
-        async function callGeminiOCR(base64Data) {
-            let systemPrompt = "";
-            if (currentLanguage === 'zh') {
-                systemPrompt = "You are an expert Chinese teacher for primary students in Hong Kong.\nExtract Chinese dictation sentences or vocabulary words from the image.\nCRITICAL INSTRUCTIONS:\n1. Fix all typos and format correctly.\n2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.\n3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.";
-            } else {
-                systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\nExtract dictation sentences from the image carefully.\nCRITICAL INSTRUCTIONS:\n1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
-            }
+        function callGeminiOCR(base64Data) {
+            return new Promise(function(resolve, reject) {
+                var systemPrompt = "";
+                if (currentLanguage === 'zh') {
+                    systemPrompt = "You are an expert Chinese teacher for primary students in Hong Kong.\nExtract Chinese dictation sentences or vocabulary words from the image.\nCRITICAL INSTRUCTIONS:\n1. Fix all typos and format correctly.\n2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.\n3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.";
+                } else {
+                    systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\nExtract dictation sentences from the image carefully.\nCRITICAL INSTRUCTIONS:\n1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
+                }
 
-            let lastError = null;
-            for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
-                const model = GEMINI_MODELS[mi];
-                const apiUrl = "/api/chat";
+                var tryModel = function(mi) {
+                    if (mi >= GEMINI_MODELS.length) {
+                        resolve({ success: false, error: classifyGeminiError(null, null) });
+                        return;
+                    }
+                    var model = GEMINI_MODELS[mi];
+                    var apiUrl = "/api/chat";
 
-                const body = JSON.stringify({
-                    model: model,
-                    contents: [{
-                        role: "user",
-                        parts: [
-                            { text: "Extract and format exactly the list of dictation sentences from this image." },
-                            { inlineData: { mimeType: "image/jpeg", data: base64Data } }
-                        ]
-                    }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                });
+                    var body = JSON.stringify({
+                        model: model,
+                        contents: [{
+                            role: "user",
+                            parts: [
+                                { text: "Extract and format exactly the list of dictation sentences from this image." },
+                                { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                            ]
+                        }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    });
 
-                try {
-                    const response = await fetch(apiUrl, {
+                    fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: body
+                    }).then(function(response) {
+                        if (response.ok) {
+                            currentGeminiModel = model;
+                            response.json().then(function(apiResult) {
+                                var candidate = apiResult.candidates && apiResult.candidates[0];
+                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                    var aiFinalText = candidate.content.parts[0].text.trim();
+                                    aiFinalText = aiFinalText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                                    if (aiFinalText) {
+                                        resolve({ success: true, text: aiFinalText });
+                                        return;
+                                    }
+                                }
+                                resolve({ success: false, error: { type: "empty_response", title: "API 回傳空白", detail: "Gemini 未能辨識出圖片中的文字。" } });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: classifyGeminiError(response, null) });
+                            });
+                        } else {
+                            if (response.status === 401 || response.status === 403) {
+                                response.json().then(function(errorData) {
+                                    resolve({ success: false, error: classifyGeminiError(response, errorData) });
+                                }).catch(function(e) {
+                                    resolve({ success: false, error: classifyGeminiError(response, null) });
+                                });
+                                return;
+                            }
+                            if (response.status === 404) {
+                                tryModel(mi + 1);
+                                return;
+                            }
+                            response.json().then(function(errorData) {
+                                resolve({ success: false, error: classifyGeminiError(response, errorData) });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: classifyGeminiError(response, null) });
+                            });
+                        }
+                    }).catch(function(err) {
+                        tryModel(mi + 1);
                     });
-
-                    if (response.ok) {
-                        currentGeminiModel = model;
-                        const apiResult = await response.json();
-                        const candidate = apiResult.candidates && apiResult.candidates[0];
-                        if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                            let aiFinalText = candidate.content.parts[0].text.trim();
-                            aiFinalText = aiFinalText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
-                            if (aiFinalText) return { success: true, text: aiFinalText };
-                        }
-                        return { success: false, error: { type: "empty_response", title: "API 回傳空白", detail: "Gemini 未能辨識出圖片中的文字。" } };
-                    } else {
-                        if (response.status === 401 || response.status === 403) {
-                            let errorData = null;
-                            try { errorData = await response.json(); } catch(e) {}
-                            return { success: false, error: classifyGeminiError(response, errorData) };
-                        }
-                        if (response.status === 404) {
-                            lastError = { response: response, data: null };
-                            continue;
-                        }
-                        let errorData = null;
-                        try { errorData = await response.json(); } catch(e) {}
-                        lastError = { response: response, data: errorData };
-                        continue;
-                    }
-                } catch (fetchErr) {
-                    lastError = { response: null, data: null };
-                    continue;
-                }
-            }
-            return { success: false, error: classifyGeminiError(null, null) };
+                };
+                tryModel(0);
+            });
         }
 
         function formatOCRResultText(text) {
-            const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-            const englishChars = (text.match(/[a-zA-Z]/g) || []).length;
+            var chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            var englishChars = (text.match(/[a-zA-Z]/g) || []).length;
 
             if (chineseChars > englishChars) {
                 setLanguage('zh');
@@ -938,19 +967,19 @@
                 setLanguage('en');
             }
 
-            let lines = text.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
-            let formattedLines = [];
+            var lines = text.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+            var formattedLines = [];
             
-            lines.forEach(function(line) {
-                let clean = line.replace(/^\d+[\.\)]\s*/, '').trim();
-                if (!clean) return;
+            for (var i = 0; i < lines.length; i++) {
+                var clean = lines[i].replace(/^\d+[\.\)]\s*/, '').trim();
+                if (!clean) continue;
 
                 if (currentLanguage === 'zh') {
-                    let subParts = clean.split(/([，、。！？；]+)/);
-                    let currentStr = "";
-                    for (let i = 0; i < subParts.length; i++) {
-                        currentStr += subParts[i];
-                        if (/^[，、。！？；]+$/.test(subParts[i])) {
+                    var subParts = clean.split(/([，.、。！？；]+)/);
+                    var currentStr = "";
+                    for (var j = 0; j < subParts.length; j++) {
+                        currentStr += subParts[j];
+                        if (/^[，.、。！？；]+$/.test(subParts[j])) {
                             if (currentStr.trim().length > 0) {
                                 formattedLines.push(currentStr.trim());
                             }
@@ -963,38 +992,45 @@
                 } else {
                     formattedLines.push(clean);
                 }
-            });
+            }
 
-            return formattedLines.map(function(s, idx) {
-                return (idx + 1) + ". " + s.replace(/^\d+[\.\)]\s*/, '');
-            }).join('\n');
+            var resultArr = [];
+            for (var k = 0; k < formattedLines.length; k++) {
+                resultArr.push((k + 1) + ". " + formattedLines[k].replace(/^\d+[\.\)]\s*/, ''));
+            }
+            return resultArr.join('\n');
         }
 
         function reindexAndAppendText(newTextString) {
-            const existingText = inputWords.value.trim();
-            let allLines = existingText ? existingText.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;}) : [];
-            let newLines = newTextString.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;});
+            var existingText = inputWords.value.trim();
+            var allLines = existingText ? existingText.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;}) : [];
+            var newLines = newTextString.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;});
             allLines = allLines.concat(newLines);
 
-            inputWords.value = allLines.map(function(s, idx) { return (idx + 1) + ". " + s; }).join('\n');
+            var finalArr = [];
+            for (var i = 0; i < allLines.length; i++) {
+                finalArr.push((i + 1) + ". " + allLines[i]);
+            }
+
+            inputWords.value = finalArr.join('\n');
             hideOcrStatus();
             showAlert("Gemini 解析完成！已自動切換為「" + (currentLanguage === 'zh' ? '中文' : '英文') + "默書」模式，並加入 " + newLines.length + " 個段落。");
         }
 
         function parseTextToQueue(rawText) {
-            let rawLines = rawText.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
-            let queue = [];
+            var rawLines = rawText.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+            var queue = [];
 
-            rawLines.forEach(function(line) {
-                let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
-                if (!cleanLine) return;
+            for (var i = 0; i < rawLines.length; i++) {
+                var cleanLine = rawLines[i].replace(/^\d+[\.\)]\s*/, '').trim();
+                if (!cleanLine) continue;
 
                 if (currentLanguage === 'zh') {
-                    let parts = cleanLine.split(/([，、。！？；]+)/);
-                    let currentSeg = "";
-                    for (let i = 0; i < parts.length; i++) {
-                        currentSeg += parts[i];
-                        if (/^[，、。！？；]+$/.test(parts[i])) {
+                    var parts = cleanLine.split(/([，、。！？；]+)/);
+                    var currentSeg = "";
+                    for (var j = 0; j < parts.length; j++) {
+                        currentSeg += parts[j];
+                        if (/^[，、。！？；]+$/.test(parts[j])) {
                             if (currentSeg.trim().length > 0) {
                                 queue.push(currentSeg.trim());
                             }
@@ -1005,11 +1041,11 @@
                         queue.push(currentSeg.trim());
                     }
                 } else {
-                    let parts = cleanLine.split(/([,.?!;]+)/);
-                    let currentSeg = "";
-                    for (let i = 0; i < parts.length; i++) {
-                        currentSeg += parts[i];
-                        if (/^[,.?!;]+$/.test(parts[i])) {
+                    var parts = cleanLine.split(/([,.?!;]+)/);
+                    var currentSeg = "";
+                    for (var j = 0; j < parts.length; j++) {
+                        currentSeg += parts[j];
+                        if (/^[,.?!;]+$/.test(parts[j])) {
                             if (currentSeg.trim().length > 0) {
                                 queue.push(currentSeg.trim());
                             }
@@ -1020,14 +1056,14 @@
                         queue.push(currentSeg.trim());
                     }
                 }
-            });
+            }
 
             return queue;
         }
 
         // ===== 默書流程控制 =====
         btnStart.addEventListener('click', function() {
-            const rawText = inputWords.value.trim();
+            var rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先輸入默書內容！");
 
             originalWords = parseTextToQueue(rawText);
@@ -1047,7 +1083,7 @@
 
         // ===== 首頁直接跳轉至 AI 批改頁 =====
         btnGotoGrading.addEventListener('click', function() {
-            const rawText = inputWords.value.trim();
+            var rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
 
             originalWords = parseTextToQueue(rawText);
@@ -1112,10 +1148,10 @@
                 window.speechSynthesis.cancel();
             } catch (e) {}
 
-            let idx = 0;
-            const playNextInFull = function() {
+            var idx = 0;
+            var playNextInFull = function() {
                 if (idx < dictationQueue.length) {
-                    const utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
+                    var utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
                     utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2;
                     if (currentLanguage === 'zh') {
                         utterance.lang = 'zh-HK';
@@ -1158,23 +1194,29 @@
         gradingCamera.addEventListener('change', handleGradingFilesInput);
         gradingGallery.addEventListener('change', handleGradingFilesInput);
 
-        async function handleGradingFilesInput(e) {
-            const files = Array.prototype.slice.call(e.target.files);
+        function handleGradingFilesInput(e) {
+            var files = Array.prototype.slice.call(e.target.files);
             if (!files || files.length === 0) return;
             e.target.value = '';
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            for (let i = 0; i < files.length; i++) {
-                try {
-                    const compressed = await compressImageFile(files[i]);
-                    gradingQueueFiles.push(compressed);
-                } catch (err) {
-                    console.error("相片壓縮處理失敗:", err);
+            var processFileIndex = 0;
+            var processNext = function() {
+                if (processFileIndex >= files.length) {
+                    renderGradingThumbnails();
+                    return;
                 }
-            }
-
-            renderGradingThumbnails();
+                compressImageFile(files[processFileIndex]).then(function(compressed) {
+                    gradingQueueFiles.push(compressed);
+                    processFileIndex++;
+                    processNext();
+                }).catch(function(err) {
+                    processFileIndex++;
+                    processNext();
+                });
+            };
+            processNext();
         }
 
         function renderGradingThumbnails() {
@@ -1188,45 +1230,46 @@
             gradingPhotoCount.innerText = gradingQueueFiles.length;
             gradingThumbnails.innerHTML = '';
 
-            gradingQueueFiles.forEach(function(item, index) {
-                const wrap = document.createElement('div');
-                wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs group";
+            for (var i = 0; i < gradingQueueFiles.length; i++) {
+                (function(item, index) {
+                    var wrap = document.createElement('div');
+                    wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs group";
 
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.className = "w-full h-full object-cover";
+                    var img = document.createElement('img');
+                    img.src = item.url;
+                    img.className = "w-full h-full object-cover";
 
-                const delBtn = document.createElement('button');
-                delBtn.type = "button";
-                delBtn.className = "absolute top-0.5 right-0.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center opacity-90 hover:opacity-100 shadow-xs";
-                delBtn.innerHTML = "✕";
-                delBtn.addEventListener('click', function() {
-                    gradingQueueFiles.splice(index, 1);
-                    renderGradingThumbnails();
-                });
+                    var delBtn = document.createElement('button');
+                    delBtn.type = "button";
+                    delBtn.className = "absolute top-0.5 right-0.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center opacity-90 hover:opacity-100 shadow-xs";
+                    delBtn.innerHTML = "✕";
+                    delBtn.addEventListener('click', function() {
+                        gradingQueueFiles.splice(index, 1);
+                        renderGradingThumbnails();
+                    });
 
-                wrap.appendChild(img);
-                wrap.appendChild(delBtn);
-                gradingThumbnails.appendChild(wrap);
-            });
+                    wrap.appendChild(img);
+                    wrap.appendChild(delBtn);
+                    gradingThumbnails.appendChild(wrap);
+                })(gradingQueueFiles[i], i);
+            }
         }
 
-        btnSubmitGrading.addEventListener('click', async function() {
+        btnSubmitGrading.addEventListener('click', function() {
             if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或上傳最少一張作業相片！");
 
             showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析 " + gradingQueueFiles.length + " 頁手寫字跡中，請稍候...", false);
             gradingResultContainer.classList.add('hidden');
 
-            try {
-                let imagesPayload = gradingQueueFiles.map(function(item) {
-                    return {
-                        base64Data: item.base64Data,
-                        mimeType: item.mimeType
-                    };
+            var imagesPayload = [];
+            for (var i = 0; i < gradingQueueFiles.length; i++) {
+                imagesPayload.push({
+                    base64Data: gradingQueueFiles[i].base64Data,
+                    mimeType: gradingQueueFiles[i].mimeType
                 });
+            }
 
-                const result = await callGeminiGradingMulti(imagesPayload);
-
+            callGeminiGradingMulti(imagesPayload).then(function(result) {
                 if (result.success) {
                     hideGradingStatus();
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
@@ -1236,24 +1279,25 @@
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
-            } catch (err) {
-                console.error("批改錯誤:", err);
-                const classified = classifyGeminiError(null, null);
+            }).catch(function(err) {
+                var classified = classifyGeminiError(null, null);
                 showGradingStatus(classified.title, classified.detail, true);
-            }
+            });
         });
 
-        btnGradingRetry.addEventListener('click', async function() {
+        btnGradingRetry.addEventListener('click', function() {
             if (gradingQueueFiles.length === 0) return;
             showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
-            try {
-                let imagesPayload = gradingQueueFiles.map(function(item) {
-                    return {
-                        base64Data: item.base64Data,
-                        mimeType: item.mimeType
-                    };
+
+            var imagesPayload = [];
+            for (var i = 0; i < gradingQueueFiles.length; i++) {
+                imagesPayload.push({
+                    base64Data: gradingQueueFiles[i].base64Data,
+                    mimeType: gradingQueueFiles[i].mimeType
                 });
-                const result = await callGeminiGradingMulti(imagesPayload);
+            }
+
+            callGeminiGradingMulti(imagesPayload).then(function(result) {
                 if (result.success) {
                     hideGradingStatus();
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
@@ -1263,10 +1307,10 @@
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
-            } catch (err) {
-                const classified = classifyGeminiError(null, null);
+            }).catch(function(err) {
+                var classified = classifyGeminiError(null, null);
                 showGradingStatus(classified.title, classified.detail, true);
-            }
+            });
         });
 
         function showGradingStatus(title, detail, showRetry) {
@@ -1279,11 +1323,11 @@
             }
             if (showRetry) {
                 gradingRetryContainer.classList.remove('hidden');
-                const spin = gradingStatusContainer.querySelector('.animate-spin');
+                var spin = gradingStatusContainer.querySelector('.animate-spin');
                 if (spin) spin.classList.add('hidden');
             } else {
                 gradingRetryContainer.classList.add('hidden');
-                const spin = gradingStatusContainer.querySelector('.animate-spin');
+                var spin = gradingStatusContainer.querySelector('.animate-spin');
                 if (spin) spin.classList.remove('hidden');
             }
         }
@@ -1291,115 +1335,137 @@
         function hideGradingStatus() {
             gradingStatusContainer.classList.add('hidden');
             gradingRetryContainer.classList.add('hidden');
-            const spin = gradingStatusContainer.querySelector('.animate-spin');
+            var spin = gradingStatusContainer.querySelector('.animate-spin');
             if (spin) spin.classList.remove('hidden');
         }
 
-        async function callGeminiGradingMulti(imageArray) {
-            const standardAnswersJSON = JSON.stringify(originalWords);
+        function callGeminiGradingMulti(imageArray) {
+            return new Promise(function(resolve, reject) {
+                var standardAnswersJSON = JSON.stringify(originalWords);
 
-            let langName = currentLanguage === 'zh' ? 'Chinese Dictation' : 'English Dictation';
-            let systemPrompt = "You are a strict but fair primary school teacher in Hong Kong (" + langName + ").\n\n" +
-                "STANDARD ANSWERS (the correct dictation segments):\n" + standardAnswersJSON + "\n\n" +
-                "YOUR TASK:\n" +
-                "1. Look at all the student's handwritten dictation photos provided in order.\n" +
-                "2. Compare each segment the student wrote against the corresponding standard answer.\n" +
-                "3. For each segment, identify: spelling/character mistakes, missing words/characters, extra parts, and punctuation errors.\n" +
-                "4. Return a STRICTLY VALID JSON object with these exact keys:\n" +
-                "   - \"scoreSummary\": a short string like \"8/10 正確\" or \"62 分 — 有 3 個錯別字\"\n" +
-                "   - \"htmlDetails\": a string of HTML. For each segment, show the correct answer, then the student's version.\n" +
-                "     Wrap mistakes in: <span class=\"text-rose-600 line-through font-medium\">wrong_text</span>\n" +
-                "     Wrap corrections in: <span class=\"text-emerald-600 font-bold\">correct_text</span>\n" +
-                "     Wrap missing in: <span class=\"text-amber-600 font-bold\">[遺漏: text]</span>\n" +
-                "     Use <div class=\"mb-2 pb-2 border-b border-slate-100\"> around each segment's analysis.\n" +
-                "     Use <div class=\"text-[10px] text-slate-400 mb-0.5\">第 N 段</div> for the label.\n\n" +
-                "CRITICAL RULES:\n" +
-                "- Return ONLY valid JSON. No markdown, no code blocks, no extra text before or after.\n" +
-                "- Make sure all HTML in htmlDetails is properly escaped for JSON.";
+                var langName = currentLanguage === 'zh' ? 'Chinese Dictation' : 'English Dictation';
+                var systemPrompt = "You are a strict but fair primary school teacher in Hong Kong (" + langName + ").\n\n" +
+                    "STANDARD ANSWERS (the correct dictation segments):\n" + standardAnswersJSON + "\n\n" +
+                    "YOUR TASK:\n" +
+                    "1. Look at all the student's handwritten dictation photos provided in order.\n" +
+                    "2. Compare each segment the student wrote against the corresponding standard answer.\n" +
+                    "3. For each segment, identify: spelling/character mistakes, missing words/characters, extra parts, and punctuation errors.\n" +
+                    "4. Return a STRICTLY VALID JSON object with these exact keys:\n" +
+                    "   - \"scoreSummary\": a short string like \"8/10 正確\" or \"62 分 — 有 3 個錯別字\"\n" +
+                    "   - \"htmlDetails\": a string of HTML. For each segment, show the correct answer, then the student's version.\n" +
+                    "     Wrap mistakes in: <span class=\"text-rose-600 line-through font-medium\">wrong_text</span>\n" +
+                    "     Wrap corrections in: <span class=\"text-emerald-600 font-bold\">correct_text</span>\n" +
+                    "     Wrap missing in: <span class=\"text-amber-600 font-bold\">[遺漏: text]</span>\n" +
+                    "     Use <div class=\"mb-2 pb-2 border-b border-slate-100\"> around each segment's analysis.\n" +
+                    "     Use <div class=\"text-[10px] text-slate-400 mb-0.5\">第 N 段</div> for the label.\n\n" +
+                    "CRITICAL RULES:\n" +
+                    "- Return ONLY valid JSON. No markdown, no code blocks, no extra text before or after.\n" +
+                    "- Make sure all HTML in htmlDetails is properly escaped for JSON.";
 
-            let userParts = [{ text: "Grade the student's handwritten dictation paper photos in order. Compare with standard answers. Return valid JSON only." }];
-            imageArray.forEach(function(img) {
-                userParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64Data } });
-            });
+                var userParts = [{ text: "Grade the student's handwritten dictation paper photos in order. Compare with standard answers. Return valid JSON only." }];
+                for (var i = 0; i < imageArray.length; i++) {
+                    userParts.push({ inlineData: { mimeType: imageArray[i].mimeType, data: imageArray[i].base64Data } });
+                }
 
-            let lastError = null;
-            for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
-                const model = GEMINI_MODELS[mi];
-                const apiUrl = "/api/chat";
+                var tryModelGrading = function(mi) {
+                    if (mi >= GEMINI_MODELS.length) {
+                        resolve({ success: false, error: classifyGeminiError(null, null) });
+                        return;
+                    }
+                    var model = GEMINI_MODELS[mi];
+                    var apiUrl = "/api/chat";
 
-                const body = JSON.stringify({
-                    model: model,
-                    contents: [{ role: "user", parts: userParts }],
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        temperature: 0.2
-                    },
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                });
+                    var body = JSON.stringify({
+                        model: model,
+                        contents: [{ role: "user", parts: userParts }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.2
+                        },
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    });
 
-                try {
-                    const response = await fetch(apiUrl, {
+                    fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: body
-                    });
+                    }).then(function(response) {
+                        if (response.ok) {
+                            currentGeminiModel = model;
+                            response.json().then(function(result) {
+                                var candidate = result.candidates && result.candidates[0];
+                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                    var textResp = candidate.content.parts[0].text.trim();
+                                    textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
 
-                    if (response.ok) {
-                        currentGeminiModel = model;
-                        const result = await response.json();
-                        const candidate = result.candidates && result.candidates[0];
-                        if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                            let textResp = candidate.content.parts[0].text.trim();
-                            textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-
-                            let parsed;
-                            try {
-                                parsed = JSON.parse(textResp);
-                            } catch (parseErr) {
-                                const match = textResp.match(/\{[\s\S]*\}/);
-                                if (match) {
-                                    parsed = JSON.parse(match[0]);
-                                } else {
-                                    return {
-                                        success: true,
-                                        data: {
-                                            scoreSummary: "批改完成",
-                                            htmlDetails: "<pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
+                                    var parsed;
+                                    try {
+                                        parsed = JSON.parse(textResp);
+                                    } catch (parseErr) {
+                                        var match = textResp.match(/\{[\s\S]*\}/);
+                                        if (match) {
+                                            try {
+                                                parsed = JSON.parse(match[0]);
+                                            } catch (e2) {
+                                                resolve({
+                                                    success: true,
+                                                    data: {
+                                                        scoreSummary: "批改完成",
+                                                        htmlDetails: "<pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
+                                                    }
+                                                });
+                                                return;
+                                            }
+                                        } else {
+                                            resolve({
+                                                success: true,
+                                                data: {
+                                                    scoreSummary: "批改完成",
+                                                    htmlDetails: "<pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
+                                                }
+                                            });
+                                            return;
                                         }
-                                    };
-                                }
-                            }
+                                    }
 
-                            if (parsed && (parsed.scoreSummary || parsed.htmlDetails)) {
-                                return { success: true, data: parsed };
+                                    if (parsed && (parsed.scoreSummary || parsed.htmlDetails)) {
+                                        resolve({ success: true, data: parsed });
+                                        return;
+                                    }
+                                }
+                                resolve({ success: false, error: { type: "empty_response", title: "API 回傳空白", detail: "Gemini 未能傳回批改結果。" } });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: classifyGeminiError(response, null) });
+                            });
+                        } else {
+                            if (response.status === 401 || response.status === 403) {
+                                response.json().then(function(errorData) {
+                                    resolve({ success: false, error: classifyGeminiError(response, errorData) });
+                                }).catch(function(e) {
+                                    resolve({ success: false, error: classifyGeminiError(response, null) });
+                                });
+                                return;
                             }
+                            if (response.status === 404) {
+                                tryModelGrading(mi + 1);
+                                return;
+                            }
+                            response.json().then(function(errorData) {
+                                resolve({ success: false, error: classifyGeminiError(response, errorData) });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: classifyGeminiError(response, null) });
+                            });
                         }
-                        return { success: false, error: { type: "empty_response", title: "API 回傳空白", detail: "Gemini 未能傳回批改結果。" } };
-                    } else {
-                        if (response.status === 401 || response.status === 403) {
-                            let errorData = null;
-                            try { errorData = await response.json(); } catch(e) {}
-                            return { success: false, error: classifyGeminiError(response, errorData) };
-                        }
-                        if (response.status === 404) {
-                            lastError = { response: response, data: null };
-                            continue;
-                        }
-                        let errorData = null;
-                        try { errorData = await response.json(); } catch(e) {}
-                        lastError = { response: response, data: errorData };
-                        continue;
-                    }
-                } catch (fetchErr) {
-                    lastError = { response: null, data: null };
-                    continue;
-                }
-            }
-            return { success: false, error: classifyGeminiError(null, null) };
+                    }).catch(function(err) {
+                        tryModelGrading(mi + 1);
+                    });
+                };
+                tryModelGrading(0);
+            });
         }
 
         function escapeHtml(text) {
-            const div = document.createElement('div');
+            var div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
