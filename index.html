@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">粵漢雙語 Pro 版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">全平台穩定版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -317,19 +317,19 @@
     <script>
         // ===== PWA 自動註冊 Service Worker =====
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js')
                     .then((reg) => { console.log('Service Worker 註冊成功:', reg.scope); })
                     .catch((err) => { console.log('Service Worker 註冊失敗:', err); });
             });
         }
 
-        // ===== 核心設定 =====
+        // ===== 核心設定（完全相容 Android 8.0 至最新 Android 17） =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v13';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v14';
 
-        let currentLanguage = 'en'; // 'en' 或 'zh'
+        let currentLanguage = 'en';
 
         // ===== DOM 元素綁定 =====
         const setupScreen = document.getElementById('setup-screen');
@@ -410,14 +410,14 @@
         let gradingQueueFiles = [];
 
         // ===== 初始化 =====
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', function() {
             renderSavedLists();
             setLanguage('en');
         });
 
         // ===== 語言切換邏輯 =====
-        btnLangEn.addEventListener('click', () => setLanguage('en'));
-        btnLangZh.addEventListener('click', () => setLanguage('zh'));
+        btnLangEn.addEventListener('click', function() { setLanguage('en'); });
+        btnLangZh.addEventListener('click', function() { setLanguage('zh'); });
 
         function setLanguage(lang) {
             currentLanguage = lang;
@@ -439,8 +439,8 @@
             modalMessage.innerText = msg;
             customModal.classList.remove('hidden');
         }
-        modalClose.addEventListener('click', () => customModal.classList.add('hidden'));
-        customModal.addEventListener('click', (e) => {
+        modalClose.addEventListener('click', function() { customModal.classList.add('hidden'); });
+        customModal.addEventListener('click', function(e) {
             if (e.target === customModal) customModal.classList.add('hidden');
         });
 
@@ -465,14 +465,14 @@
             }
 
             savedListsContainer.innerHTML = '';
-            lists.forEach((item, index) => {
+            lists.forEach(function(item, index) {
                 const div = document.createElement('div');
                 div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
 
                 const titleSpan = document.createElement('span');
                 titleSpan.className = "text-xs font-medium text-slate-700 truncate flex-1 mr-2 cursor-pointer";
                 titleSpan.innerText = (item.lang === 'zh' ? '【中文】' : '【英文】') + ' ' + item.title;
-                titleSpan.addEventListener('click', () => {
+                titleSpan.addEventListener('click', function() {
                     inputWords.value = item.content;
                     if (item.lang) setLanguage(item.lang);
                     showAlert("已成功載入：「" + item.title + "」");
@@ -482,7 +482,7 @@
                 btnDel.type = "button";
                 btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
                 btnDel.innerHTML = "✕";
-                btnDel.addEventListener('click', (e) => {
+                btnDel.addEventListener('click', function(e) {
                     e.stopPropagation();
                     let currentLists = loadSavedLists();
                     currentLists.splice(index, 1);
@@ -496,7 +496,7 @@
             });
         }
 
-        btnSaveCurrent.addEventListener('click', () => {
+        btnSaveCurrent.addEventListener('click', function() {
             const text = inputWords.value.trim();
             if (!text) return showAlert("沒有內容可供儲存！");
             const firstLine = text.split('\n')[0].trim();
@@ -513,7 +513,7 @@
 
         // ===== 文本操作按鈕 =====
         let isAllSelected = false;
-        btnSelectAll.addEventListener('click', () => {
+        btnSelectAll.addEventListener('click', function() {
             inputWords.focus();
             if (!isAllSelected) {
                 inputWords.select();
@@ -526,7 +526,7 @@
             }
         });
 
-        btnClearAll.addEventListener('click', () => {
+        btnClearAll.addEventListener('click', function() {
             if (inputWords.value.trim() === '') return;
             if (confirm("確定要清除全部文字嗎？")) {
                 inputWords.value = '';
@@ -535,44 +535,59 @@
             }
         });
 
-        // ===== 語音發音（支援粵語 zh-HK / 英文 en-GB） =====
+        // ===== 語音發音（安全相容處理，支援 Android 8.0 至最新版） =====
         function speakText(text) {
             if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
+            try {
+                window.speechSynthesis.cancel();
+            } catch (e) {}
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
 
             if (currentLanguage === 'zh') {
-                utterance.lang = 'zh-HK'; // 廣東話
+                utterance.lang = 'zh-HK';
                 utterance.pitch = 1.0;
             } else {
-                utterance.lang = 'en-GB'; // 英式英語
+                utterance.lang = 'en-GB';
                 utterance.pitch = 1.0;
             }
 
-            const voices = window.speechSynthesis.getVoices();
-            if (voices && voices.length > 0) {
-                const targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
-                const found = voices.find(v => v.lang === targetLang || v.lang.replace('_','-') === targetLang || v.lang.startsWith(currentLanguage));
-                if (found) utterance.voice = found;
-            }
+            try {
+                const voices = window.speechSynthesis.getVoices();
+                if (voices && voices.length > 0) {
+                    const targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
+                    const found = voices.find(function(v) {
+                        return v.lang === targetLang || (v.lang && v.lang.replace('_','-') === targetLang) || (v.lang && v.lang.startsWith(currentLanguage));
+                    });
+                    if (found) utterance.voice = found;
+                }
+            } catch (e) {}
 
-            window.speechSynthesis.speak(utterance);
+            setTimeout(function() {
+                try {
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {}
+            }, 50);
         }
 
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            try {
+                window.speechSynthesis.getVoices();
+                window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+            } catch (e) {}
         }
 
         // ===== 圖片智慧壓縮（Canvas Resizing to 1200px max） =====
-        function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
-            return new Promise((resolve, reject) => {
+        function compressImageFile(file, maxWidth, maxHeight, quality) {
+            maxWidth = maxWidth || 1200;
+            maxHeight = maxHeight || 1200;
+            quality = quality || 0.8;
+            return new Promise(function(resolve, reject) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = function(e) {
                     const img = new Image();
-                    img.onload = () => {
+                    img.onload = function() {
                         let w = img.width;
                         let h = img.height;
                         if (w > maxWidth || h > maxHeight) {
@@ -590,15 +605,15 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, w, h);
                         
-                        canvas.toBlob((blob) => {
+                        canvas.toBlob(function(blob) {
                             if (!blob) {
                                 reject(new Error("Canvas toBlob failed"));
                                 return;
                             }
                             const compReader = new FileReader();
-                            compReader.onload = () => {
+                            compReader.onload = function() {
                                 const base64Full = compReader.result;
-                                const base64Data = base64Full.includes(',') ? base64Full.split(',')[1] : base64Full;
+                                const base64Data = base64Full.indexOf(',') !== -1 ? base64Full.split(',')[1] : base64Full;
                                 resolve({
                                     base64Data: base64Data,
                                     mimeType: "image/jpeg",
@@ -624,7 +639,7 @@
         function handleImageUpload(e) {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            pendingFiles = Array.from(files);
+            pendingFiles = Array.prototype.slice.call(files);
             currentFileIndex = 0;
             accumulatedOCRTextResults = [];
             e.target.value = '';
@@ -678,21 +693,21 @@
 
         function getCanvasCoords(e) {
             const rect = cropCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
             return {
                 x: (clientX - rect.left) * (cropCanvas.width / rect.width),
                 y: (clientY - rect.top) * (cropCanvas.height / rect.height)
             };
         }
 
-        const startDrag = (e) => {
+        const startDrag = function(e) {
             isDragging = true;
             const coords = getCanvasCoords(e);
             startX = coords.x; startY = coords.y;
             cropRect = { x: startX, y: startY, width: 0, height: 0 };
         };
-        const doDrag = (e) => {
+        const doDrag = function(e) {
             if (!isDragging) return;
             const coords = getCanvasCoords(e);
             let w = coords.x - startX, h = coords.y - startY;
@@ -703,7 +718,7 @@
             drawCropCanvas();
             if(e.type === 'touchmove') e.preventDefault();
         };
-        const endDrag = () => {
+        const endDrag = function() {
             isDragging = false;
             if (cropRect.width < 20 || cropRect.height < 20) {
                 if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
@@ -718,12 +733,12 @@
         cropCanvas.addEventListener('touchmove', doDrag, {passive: false});
         cropCanvas.addEventListener('touchend', endDrag);
 
-        btnConfirmCrop.addEventListener('click', () => {
+        btnConfirmCrop.addEventListener('click', function() {
             cropModal.classList.add('hidden');
             executeGeminiVision(false);
         });
 
-        btnSkipCrop.addEventListener('click', () => {
+        btnSkipCrop.addEventListener('click', function() {
             cropModal.classList.add('hidden');
             if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
             executeGeminiVision(true);
@@ -805,7 +820,7 @@
 
             showOcrStatus("正在分析圖片中...", "步驟 1/2：圖片辨識進行中，請稍候...", false);
 
-            targetCanvas.toBlob(async (blob) => {
+            targetCanvas.toBlob(async function(blob) {
                 try {
                     const compressed = await compressImageFile(new File([blob], "crop.jpg", { type: "image/jpeg" }));
                     lastOcrContext = { base64Data: compressed.base64Data, mimeType: "image/jpeg" };
@@ -815,7 +830,7 @@
                     if (result.success) {
                         accumulatedOCRTextResults.push(formatOCRResultText(result.text));
                         showOcrStatus("分析完成！", "正在處理下一張圖片...", false);
-                        setTimeout(() => {
+                        setTimeout(function() {
                             currentFileIndex++;
                             processNextFileForCrop();
                         }, 400);
@@ -829,7 +844,7 @@
             }, 'image/jpeg', 0.8);
         }
 
-        btnOcrRetry.addEventListener('click', async () => {
+        btnOcrRetry.addEventListener('click', async function() {
             if (!lastOcrContext) return;
             showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
             try {
@@ -851,17 +866,9 @@
         async function callGeminiOCR(base64Data) {
             let systemPrompt = "";
             if (currentLanguage === 'zh') {
-                systemPrompt = `You are an expert Chinese teacher for primary students in Hong Kong.
-Extract Chinese dictation sentences or vocabulary words from the image.
-CRITICAL INSTRUCTIONS:
-1. Fix all typos and format correctly.
-2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.
-3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.`;
+                systemPrompt = "You are an expert Chinese teacher for primary students in Hong Kong.\nExtract Chinese dictation sentences or vocabulary words from the image.\nCRITICAL INSTRUCTIONS:\n1. Fix all typos and format correctly.\n2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.\n3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.";
             } else {
-                systemPrompt = `You are an expert English teacher for primary students in Hong Kong.
-Extract dictation sentences from the image carefully.
-CRITICAL INSTRUCTIONS:
-1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.`;
+                systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\nExtract dictation sentences from the image carefully.\nCRITICAL INSTRUCTIONS:\n1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
             }
 
             let lastError = null;
@@ -931,10 +938,10 @@ CRITICAL INSTRUCTIONS:
                 setLanguage('en');
             }
 
-            let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let lines = text.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
             let formattedLines = [];
             
-            lines.forEach(line => {
+            lines.forEach(function(line) {
                 let clean = line.replace(/^\d+[\.\)]\s*/, '').trim();
                 if (!clean) return;
 
@@ -958,25 +965,27 @@ CRITICAL INSTRUCTIONS:
                 }
             });
 
-            return formattedLines.map((s, idx) => (idx + 1) + ". " + s.replace(/^\d+[\.\)]\s*/, '')).join('\n');
+            return formattedLines.map(function(s, idx) {
+                return (idx + 1) + ". " + s.replace(/^\d+[\.\)]\s*/, '');
+            }).join('\n');
         }
 
         function reindexAndAppendText(newTextString) {
             const existingText = inputWords.value.trim();
-            let allLines = existingText ? existingText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l=>l) : [];
-            let newLines = newTextString.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l=>l);
-            allLines = [...allLines, ...newLines];
+            let allLines = existingText ? existingText.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;}) : [];
+            let newLines = newTextString.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;});
+            allLines = allLines.concat(newLines);
 
-            inputWords.value = allLines.map((s, idx) => (idx + 1) + ". " + s).join('\n');
+            inputWords.value = allLines.map(function(s, idx) { return (idx + 1) + ". " + s; }).join('\n');
             hideOcrStatus();
             showAlert("Gemini 解析完成！已自動切換為「" + (currentLanguage === 'zh' ? '中文' : '英文') + "默書」模式，並加入 " + newLines.length + " 個段落。");
         }
 
         function parseTextToQueue(rawText) {
-            let rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let rawLines = rawText.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
             let queue = [];
 
-            rawLines.forEach(line => {
+            rawLines.forEach(function(line) {
                 let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
                 if (!cleanLine) return;
 
@@ -1017,14 +1026,14 @@ CRITICAL INSTRUCTIONS:
         }
 
         // ===== 默書流程控制 =====
-        btnStart.addEventListener('click', () => {
+        btnStart.addEventListener('click', function() {
             const rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先輸入默書內容！");
 
             originalWords = parseTextToQueue(rawText);
             if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
 
-            dictationQueue = [...originalWords];
+            dictationQueue = originalWords.slice(0);
             currentQueueIndex = 0;
 
             setupScreen.classList.add('hidden');
@@ -1033,11 +1042,11 @@ CRITICAL INSTRUCTIONS:
             hideGradingStatus();
 
             updateProgress();
-            setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+            setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
         });
 
         // ===== 首頁直接跳轉至 AI 批改頁 =====
-        btnGotoGrading.addEventListener('click', () => {
+        btnGotoGrading.addEventListener('click', function() {
             const rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
 
@@ -1046,7 +1055,7 @@ CRITICAL INSTRUCTIONS:
 
             setupScreen.classList.add('hidden');
             resultScreen.classList.remove('hidden');
-            resultSummary.innerText = `已載入 ${originalWords.length} 個標準答案段落，請直接上傳手寫作業進行 AI 批改！`;
+            resultSummary.innerText = "已載入 " + originalWords.length + " 個標準答案段落，請直接上傳手寫作業進行 AI 批改！";
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
             gradingQueueFiles = [];
@@ -1056,14 +1065,12 @@ CRITICAL INSTRUCTIONS:
         function updateProgress() {
             progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
             
-            // 如果是第一段，隱藏「播回上一段」；否則顯示
             if (currentQueueIndex === 0) {
                 btnPrevSentence.classList.add('invisible');
             } else {
                 btnPrevSentence.classList.remove('invisible');
             }
 
-            // 如果是最後一段，顯示「全文快速檢查」按鈕
             if (currentQueueIndex === dictationQueue.length - 1) {
                 fullReviewContainer.classList.remove('hidden');
             } else {
@@ -1071,26 +1078,25 @@ CRITICAL INSTRUCTIONS:
             }
         }
 
-        btnPlayWord.addEventListener('click', () => {
+        btnPlayWord.addEventListener('click', function() {
             if (dictationQueue[currentQueueIndex]) {
                 speakText(dictationQueue[currentQueueIndex]);
             }
         });
 
-        // 播回上一段
-        btnPrevSentence.addEventListener('click', () => {
+        btnPrevSentence.addEventListener('click', function() {
             if (currentQueueIndex > 0) {
                 currentQueueIndex--;
                 updateProgress();
-                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+                setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
             }
         });
 
-        btnNextSentence.addEventListener('click', () => {
+        btnNextSentence.addEventListener('click', function() {
             currentQueueIndex++;
             if (currentQueueIndex < dictationQueue.length) {
                 updateProgress();
-                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+                setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
             } else {
                 dictationScreen.classList.add('hidden');
                 resultScreen.classList.remove('hidden');
@@ -1100,47 +1106,50 @@ CRITICAL INSTRUCTIONS:
             }
         });
 
-        // 全文快速播放檢查
-        btnFullReview.addEventListener('click', () => {
+        btnFullReview.addEventListener('click', function() {
             if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
+            try {
+                window.speechSynthesis.cancel();
+            } catch (e) {}
 
             let idx = 0;
-            const playNextInFull = () => {
+            const playNextInFull = function() {
                 if (idx < dictationQueue.length) {
                     const utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
-                    utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2; // 稍快一點作檢查
+                    utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2;
                     if (currentLanguage === 'zh') {
                         utterance.lang = 'zh-HK';
                     } else {
                         utterance.lang = 'en-GB';
                     }
-                    utterance.onend = () => {
+                    utterance.onend = function() {
                         idx++;
-                        setTimeout(playNextInFull, 600); // 段落間隔 0.6 秒
+                        setTimeout(playNextInFull, 600);
                     };
-                    window.speechSynthesis.speak(utterance);
+                    try {
+                        window.speechSynthesis.speak(utterance);
+                    } catch (e) {}
                 }
             };
             playNextInFull();
         });
 
-        btnBackSetup.addEventListener('click', () => {
+        btnBackSetup.addEventListener('click', function() {
             dictationScreen.classList.add('hidden');
             setupScreen.classList.remove('hidden');
         });
 
-        btnRetryAll.addEventListener('click', () => {
+        btnRetryAll.addEventListener('click', function() {
             currentQueueIndex = 0;
             resultScreen.classList.add('hidden');
             dictationScreen.classList.remove('hidden');
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
             updateProgress();
-            setTimeout(() => speakText(dictationQueue[0]), 300);
+            setTimeout(function() { speakText(dictationQueue[0]); }, 300);
         });
 
-        btnRestart.addEventListener('click', () => {
+        btnRestart.addEventListener('click', function() {
             resultScreen.classList.add('hidden');
             setupScreen.classList.remove('hidden');
         });
@@ -1150,15 +1159,15 @@ CRITICAL INSTRUCTIONS:
         gradingGallery.addEventListener('change', handleGradingFilesInput);
 
         async function handleGradingFilesInput(e) {
-            const files = Array.from(e.target.files);
+            const files = Array.prototype.slice.call(e.target.files);
             if (!files || files.length === 0) return;
             e.target.value = '';
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            for (let file of files) {
+            for (let i = 0; i < files.length; i++) {
                 try {
-                    const compressed = await compressImageFile(file);
+                    const compressed = await compressImageFile(files[i]);
                     gradingQueueFiles.push(compressed);
                 } catch (err) {
                     console.error("相片壓縮處理失敗:", err);
@@ -1179,7 +1188,7 @@ CRITICAL INSTRUCTIONS:
             gradingPhotoCount.innerText = gradingQueueFiles.length;
             gradingThumbnails.innerHTML = '';
 
-            gradingQueueFiles.forEach((item, index) => {
+            gradingQueueFiles.forEach(function(item, index) {
                 const wrap = document.createElement('div');
                 wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-2xs group";
 
@@ -1191,7 +1200,7 @@ CRITICAL INSTRUCTIONS:
                 delBtn.type = "button";
                 delBtn.className = "absolute top-0.5 right-0.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center opacity-90 hover:opacity-100 shadow-xs";
                 delBtn.innerHTML = "✕";
-                delBtn.addEventListener('click', () => {
+                delBtn.addEventListener('click', function() {
                     gradingQueueFiles.splice(index, 1);
                     renderGradingThumbnails();
                 });
@@ -1202,17 +1211,19 @@ CRITICAL INSTRUCTIONS:
             });
         }
 
-        btnSubmitGrading.addEventListener('click', async () => {
+        btnSubmitGrading.addEventListener('click', async function() {
             if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或上傳最少一張作業相片！");
 
-            showGradingStatus("AI 正在批改手寫默書...", `步驟 1/2：分析 ${gradingQueueFiles.length} 頁手寫字跡中，請稍候...`, false);
+            showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析 " + gradingQueueFiles.length + " 頁手寫字跡中，請稍候...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
-                let imagesPayload = gradingQueueFiles.map(item => ({
-                    base64Data: item.base64Data,
-                    mimeType: item.mimeType
-                }));
+                let imagesPayload = gradingQueueFiles.map(function(item) {
+                    return {
+                        base64Data: item.base64Data,
+                        mimeType: item.mimeType
+                    };
+                });
 
                 const result = await callGeminiGradingMulti(imagesPayload);
 
@@ -1232,14 +1243,16 @@ CRITICAL INSTRUCTIONS:
             }
         });
 
-        btnGradingRetry.addEventListener('click', async () => {
+        btnGradingRetry.addEventListener('click', async function() {
             if (gradingQueueFiles.length === 0) return;
             showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
             try {
-                let imagesPayload = gradingQueueFiles.map(item => ({
-                    base64Data: item.base64Data,
-                    mimeType: item.mimeType
-                }));
+                let imagesPayload = gradingQueueFiles.map(function(item) {
+                    return {
+                        base64Data: item.base64Data,
+                        mimeType: item.mimeType
+                    };
+                });
                 const result = await callGeminiGradingMulti(imagesPayload);
                 if (result.success) {
                     hideGradingStatus();
@@ -1285,30 +1298,27 @@ CRITICAL INSTRUCTIONS:
         async function callGeminiGradingMulti(imageArray) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            let systemPrompt = `You are a strict but fair primary school teacher in Hong Kong (${currentLanguage === 'zh' ? 'Chinese Dictation' : 'English Dictation'}).
-
-STANDARD ANSWERS (the correct dictation segments):
-${standardAnswersJSON}
-
-YOUR TASK:
-1. Look at all the student's handwritten dictation photos provided in order.
-2. Compare each segment the student wrote against the corresponding standard answer.
-3. For each segment, identify: spelling/character mistakes, missing words/characters, extra parts, and punctuation errors.
-4. Return a STRICTLY VALID JSON object with these exact keys:
-   - "scoreSummary": a short string like "8/10 正確" or "62 分 — 有 3 個錯別字"
-   - "htmlDetails": a string of HTML. For each segment, show the correct answer, then the student's version.
-     Wrap mistakes in: <span class="text-rose-600 line-through font-medium">wrong_text</span>
-     Wrap corrections in: <span class="text-emerald-600 font-bold">correct_text</span>
-     Wrap missing in: <span class="text-amber-600 font-bold">[遺漏: text]</span>
-     Use <div class="mb-2 pb-2 border-b border-slate-100"> around each segment's analysis.
-     Use <div class="text-[10px] text-slate-400 mb-0.5">第 N 段</div> for the label.
-
-CRITICAL RULES:
-- Return ONLY valid JSON. No markdown, no code blocks, no extra text before or after.
-- Make sure all HTML in htmlDetails is properly escaped for JSON.`;
+            let langName = currentLanguage === 'zh' ? 'Chinese Dictation' : 'English Dictation';
+            let systemPrompt = "You are a strict but fair primary school teacher in Hong Kong (" + langName + ").\n\n" +
+                "STANDARD ANSWERS (the correct dictation segments):\n" + standardAnswersJSON + "\n\n" +
+                "YOUR TASK:\n" +
+                "1. Look at all the student's handwritten dictation photos provided in order.\n" +
+                "2. Compare each segment the student wrote against the corresponding standard answer.\n" +
+                "3. For each segment, identify: spelling/character mistakes, missing words/characters, extra parts, and punctuation errors.\n" +
+                "4. Return a STRICTLY VALID JSON object with these exact keys:\n" +
+                "   - \"scoreSummary\": a short string like \"8/10 正確\" or \"62 分 — 有 3 個錯別字\"\n" +
+                "   - \"htmlDetails\": a string of HTML. For each segment, show the correct answer, then the student's version.\n" +
+                "     Wrap mistakes in: <span class=\"text-rose-600 line-through font-medium\">wrong_text</span>\n" +
+                "     Wrap corrections in: <span class=\"text-emerald-600 font-bold\">correct_text</span>\n" +
+                "     Wrap missing in: <span class=\"text-amber-600 font-bold\">[遺漏: text]</span>\n" +
+                "     Use <div class=\"mb-2 pb-2 border-b border-slate-100\"> around each segment's analysis.\n" +
+                "     Use <div class=\"text-[10px] text-slate-400 mb-0.5\">第 N 段</div> for the label.\n\n" +
+                "CRITICAL RULES:\n" +
+                "- Return ONLY valid JSON. No markdown, no code blocks, no extra text before or after.\n" +
+                "- Make sure all HTML in htmlDetails is properly escaped for JSON.";
 
             let userParts = [{ text: "Grade the student's handwritten dictation paper photos in order. Compare with standard answers. Return valid JSON only." }];
-            imageArray.forEach(img => {
+            imageArray.forEach(function(img) {
                 userParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64Data } });
             });
 
