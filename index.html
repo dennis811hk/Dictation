@@ -52,7 +52,7 @@
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格標點斷句：依標點符號分隔換行，略過手寫筆記）</span></p>
+                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span></p>
                 <div class="flex space-x-1.5 flex-shrink-0">
                     <button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -254,7 +254,7 @@
         }
 
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v31';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v36';
         let currentLanguage = 'zh';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -450,7 +450,7 @@
             accumulatedOCRTextResults = [];
             e.target.value = '';
 
-            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（依標點符號精確換行，略過手寫筆記）...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片...", false);
             processNextFileDirectOCR();
         }
 
@@ -468,15 +468,10 @@
             const file = pendingFiles[currentFileIndex];
             showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張...", false);
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64Full = event.target.result;
-                const base64Data = base64Full.split(',')[1];
-                const mimeType = file.type || "image/jpeg";
+            compressImageToCompressedBase64(file, 1000, 0.6).then(base64Data => {
+                lastOcrContext = { base64Data: base64Data, mimeType: "image/jpeg" };
 
-                lastOcrContext = { base64Data: base64Data, mimeType: mimeType };
-
-                callGeminiOCRData(base64Data, mimeType).then((result) => {
+                callGeminiOCRData(base64Data, "image/jpeg").then((result) => {
                     if (result.success) {
                         if (result.detectedLang && (result.detectedLang === 'zh' || result.detectedLang === 'en')) {
                             setLanguage(result.detectedLang);
@@ -490,12 +485,10 @@
                 }).catch(() => {
                     showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
                 });
-            };
-            reader.onerror = () => {
+            }).catch(() => {
                 currentFileIndex++;
                 processNextFileDirectOCR();
-            };
-            reader.readAsDataURL(file);
+            });
         }
 
         function formatOCRResultText(text, lang) {
@@ -629,7 +622,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
             let formatted = cleanList.map((item, idx) => (idx + 1) + ". " + item);
             inputWords.value = formatted.join('\n');
             hideOcrStatus();
-            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子（已自動依標點分句並過濾手寫筆記）。");
+            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子。");
         }
 
         function showOcrStatus(title, detail, showRetry) {
@@ -825,13 +818,13 @@ Look at the image carefully and adhere strictly to these absolute rules:
             if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或選取作業相片！");
             if (originalWords.length === 0) return showAlert("缺少標準答案！");
 
-            showGradingStatus("AI 正在批改中...", "正在自動壓縮作業相片並進行紅筆批改...", false);
+            showGradingStatus("AI 正在極速批改中...", "正在壓縮作業相片並與標準答案比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
                 let base64List = [];
                 for (let file of gradingQueueFiles) {
-                    const compressedB64 = await compressImageToCompressedBase64(file, 1200, 0.7);
+                    const compressedB64 = await compressImageToCompressedBase64(file, 600, 0.4);
                     base64List.push({ data: compressedB64, mimeType: "image/jpeg" });
                 }
 
@@ -850,7 +843,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
             }
         });
 
-        // 圖片自動壓縮函式：將相片等比例縮小並降低畫質，避免檔案過大導致 API 請求超載
+        // 圖片極速壓縮函式（600px 寬度，0.4 品質，確保 Payload 不超載）
         function compressImageToCompressedBase64(file, maxWidth, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -891,20 +884,15 @@ Look at the image carefully and adhere strictly to these absolute rules:
         }
 
         async function callGeminiBatchGrading(base64List) {
-            const standardAnswersJSON = JSON.stringify(originalWords);
+            const simplifiedAnswers = originalWords.map((w, i) => `${i+1}:${w}`).join(';');
             const systemPrompt = `You are a strict primary teacher in Hong Kong.
-STANDARD ANSWERS:
-${standardAnswersJSON}
-
-INSTRUCTIONS:
-1. You are given multiple student handwritten dictation assignment photos in strict chronological order (Photo 1, Photo 2, ...). Read them in order.
-2. Compare the student's handwritten answers against the standard answers.
-3. Return a STRICTLY VALID JSON object with these exact keys:
-   - "scoreSummary": e.g. "28/29 正確"
-   - "htmlDetails": HTML string showing comparison. Use <span class="text-rose-600 line-through">wrong</span> and <span class="text-emerald-600 font-bold">correct</span>.
+ANSWERS: ${simplifiedAnswers}
+Compare student homework photos against these numbered answers. Return a STRICTLY VALID JSON object with exact keys:
+- "scoreSummary": e.g. "28/29 正確"
+- "htmlDetails": Compact HTML string highlighting errors or correct summary. Use <span class="text-rose-600 line-through">wrong</span> and <span class="text-emerald-600 font-bold">correct</span>.
 - Return ONLY valid JSON. No markdown.`;
 
-            let parts = [{ text: "Grade the student's handwritten dictation photos in exact sequential order. Return valid JSON only." }];
+            let parts = [{ text: "Grade student dictation photos against standard answers. Return valid JSON only." }];
             base64List.forEach(item => {
                 parts.push({ inlineData: { mimeType: item.mimeType || "image/jpeg", data: item.data } });
             });
@@ -916,7 +904,7 @@ INSTRUCTIONS:
                 const body = JSON.stringify({
                     model: model,
                     contents: [{ role: "user", parts: parts }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
