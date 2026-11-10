@@ -1008,7 +1008,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // ===== AI 批改功能（強化逐字精準度） =====
+        // ===== AI 批改功能（超嚴格逐字實報比對） =====
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -1029,7 +1029,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一比對...", false);
+            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：正將手寫圖片逐字實報 transcribe 並與標準答案逐一比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -1073,36 +1073,42 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 重點強化：超級精準逐字比對 Prompt
+        // 重點強化：嚴格逐字「如實識別」與比對 Prompt
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are a strict, meticulous primary school teacher in Hong Kong grading handwritten dictation work.
+            const systemPrompt = `You are a strict primary school teacher in Hong Kong grading a student's handwritten dictation homework.
 
-STANDARD ANSWERS (Standard sentences):
+STANDARD ANSWERS (Expected correct sentences):
 ${standardAnswersJSON}
 
-INSTRUCTIONS FOR HIGH-ACCURACY GRADING:
-1. **Transcribe Student's Handwriting**: Carefully transcribe what the student actually wrote for each sentence in the photo character-by-character (or word-by-word for English).
-2. **Strict Character-by-Character Comparison**: Compare the student's transcription against the standard answer.
-3. **DO NOT SKIP ERRORS**:
-   - If a character is wrong, miswritten, replaced, or misspelled, mark it as a **WRONG CHARACTER** in RED.
-   - If a character or word is missing, blank, or skipped, mark it as a **MISSING CHARACTER** in GREEN.
-4. **STRICT COLOR FORMATTING**:
-   - **RED COLOR (Mistakes / 錯字)**:
-     Wrap all wrong characters/words in: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正)</span>
-   - **GREEN COLOR (Missing / 漏字)**:
-     Wrap all missing characters/words in: <span class="text-emerald-600 font-bold">[漏字: 補]</span>
-5. **JSON OUTPUT FORMAT**:
+CRITICAL MANDATORY GRADING INSTRUCTIONS:
+1. **LITERAL CHARACTER-BY-CHARACTER TRANSCRIBER (如實逐字識別)**:
+   - Carefully look at the student's handwritten text in the photo.
+   - Transcribe EXACTLY what the student wrote, character by character (or English word by word).
+   - **DO NOT AUTO-CORRECT OR INFER MISSING INTENT**: If the student wrote a completely wrong character, a grammatically incorrect sentence, a nonsense word, or made a typo, transcribe the exact wrong character as written.
+   - If the student omitted characters or left a space blank, recognize that character as MISSING.
+
+2. **STRICT COMPARISON & COLOR HIGHLIGHTING**:
+   - Compare the student's literal transcription character-by-character against the corresponding Standard Answer sentence.
+   - **RED COLOR FOR WRONG / EXTRA / MISSPELLED CHARACTERS (錯字/別字/多字)**:
+     Wrap any character the student wrote incorrectly in red:
+     <span class="text-rose-600 line-through font-bold">學生寫錯的字</span><span class="text-rose-600 font-bold">(正字: 正)</span>
+   - **GREEN COLOR FOR MISSING CHARACTERS (漏字)**:
+     Wrap any character in the standard answer that the student completely skipped or left blank in green:
+     <span class="text-emerald-600 font-bold">[漏字: 正]</span>
+
+3. **JSON OUTPUT FORMAT**:
    Return ONLY a valid JSON object with:
    - "scoreSummary": e.g., "75 分 — 發現 3 個錯字、2 個漏字"
-   - "htmlDetails": HTML string. For each item:
-     - Display: <div class="mb-2 pb-2 border-b border-slate-100">
-     - Sentence number: <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
-     - Standard Answer: <div class="font-bold text-slate-800">標準答案：...</div>
-     - Student Answer Analysis: <div class="mt-1 text-slate-600">學生寫成：[Full sentence with RED for mistakes and GREEN for missing words]</div>
+   - "htmlDetails": HTML string. For each sentence:
+     - Container: <div class="mb-3 pb-3 border-b border-slate-100">
+     - Sentence index: <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
+     - Standard Answer: <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
+     - Literal Student Analysis: <div class="text-slate-600 leading-normal">學生寫成：[Student's transcribed sentence with RED for wrong chars and GREEN for missing chars]</div>
      - </div>
-Return ONLY valid JSON. No markdown backticks, no code blocks.`;
+
+Return ONLY valid JSON. No markdown code blocks (```json), no extra text.`;
 
             let lastError = null;
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -1114,7 +1120,7 @@ Return ONLY valid JSON. No markdown backticks, no code blocks.`;
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Perform rigorous character-by-character dictation grading on this photo. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
+                            { text: "Perform literal, character-by-character dictation transcription and grading. Do not auto-correct student mistakes. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
