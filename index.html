@@ -34,16 +34,23 @@
 
         <!-- 畫面 1：準備默書 -->
         <div id="setup-screen" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold text-slate-800">準備默書</h2>
-                <!-- 動態語言偵測狀態顯示 -->
-                <div id="dynamic-mode-indicator" class="text-xs bg-slate-100 text-slate-600 font-semibold px-3 py-1 rounded-full flex items-center space-x-1">
-                    <span>✨ 智慧語系切換：等待輸入...</span>
+            <h2 class="text-lg font-bold text-slate-800">準備默書</h2>
+
+            <!-- 科目／語言手動切換按鈕區 -->
+            <div class="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl space-y-2">
+                <span class="block text-xs font-semibold text-slate-500">選擇默書科目／語言</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="btn-mode-english" class="py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-white text-slate-700 border border-slate-200 shadow-2xs hover:border-blue-400">
+                        <span>🇬🇧 英文默書</span>
+                    </button>
+                    <button type="button" id="btn-mode-cantonese" class="py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-blue-600 text-white shadow-sm">
+                        <span>🇭🇰 中文（粵語）默書</span>
+                    </button>
                 </div>
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="helper-desc" class="text-sm text-slate-500">請貼上英文詞語或中文文章，系統會自動切換對應語系與發音。</p>
+                <p id="helper-desc" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動提取印刷課文。</p>
                 <div class="flex space-x-1.5">
                     <button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -98,6 +105,28 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <span>上傳相片辨識</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 首頁直接批改按鈕功能區（只要選字欄有內容即自動顯示） -->
+            <div id="home-grading-section" class="hidden bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-2.5 fade-in shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-indigo-900 flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>✨ 快捷直接批改模式</span>
+                    </span>
+                    <span class="text-[10px] bg-indigo-100 text-indigo-700 font-semibold px-2 py-0.5 rounded">免測驗直接上傳</span>
+                </div>
+                <div class="relative overflow-hidden">
+                    <input type="file" id="home-grading-upload" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                    <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition shadow-xs text-xs flex items-center justify-center space-x-2 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        </svg>
+                        <span>直接拍照／上傳手寫作業進行 AI 紅筆批改</span>
                     </button>
                 </div>
             </div>
@@ -293,6 +322,8 @@
 
         const segmentToolbar = document.getElementById('segment-toolbar');
         const btnAutoSegment = document.getElementById('btn-auto-segment');
+        const homeGradingSection = document.getElementById('home-grading-section');
+        const homeGradingUpload = document.getElementById('home-grading-upload');
 
         const btnStart = document.getElementById('btn-start');
         const cameraUpload = document.getElementById('camera-upload');
@@ -343,6 +374,7 @@
         let originalWords = [];
         let dictationQueue = [];
         let currentQueueIndex = 0;
+        let selectedManualLang = 'cantonese'; // 'cantonese' 或 'english'
 
         let pendingFiles = [];
         let currentFileIndex = 0;
@@ -359,7 +391,32 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
             checkInputLanguageAndSegment();
+            updateManualLangButtons();
         });
+
+        // ===== 手動語言切換按鈕綁定 =====
+        const btnModeEnglish = document.getElementById('btn-mode-english');
+        const btnModeCantonese = document.getElementById('btn-mode-cantonese');
+
+        btnModeEnglish.addEventListener('click', () => {
+            selectedManualLang = 'english';
+            updateManualLangButtons();
+        });
+
+        btnModeCantonese.addEventListener('click', () => {
+            selectedManualLang = 'cantonese';
+            updateManualLangButtons();
+        });
+
+        function updateManualLangButtons() {
+            if (selectedManualLang === 'english') {
+                btnModeEnglish.className = "py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-blue-600 text-white shadow-sm";
+                btnModeCantonese.className = "py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-white text-slate-700 border border-slate-200 shadow-2xs hover:border-blue-400";
+            } else {
+                btnModeCantonese.className = "py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-blue-600 text-white shadow-sm";
+                btnModeEnglish.className = "py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition bg-white text-slate-700 border border-slate-200 shadow-2xs hover:border-blue-400";
+            }
+        }
 
         // ===== 根據文字內容自動檢測語系與分句提示 =====
         inputWords.addEventListener('input', () => {
@@ -393,6 +450,13 @@
                 dynamicModeIndicator.className = 'text-xs bg-slate-100 text-slate-600 font-semibold px-3 py-1 rounded-full flex items-center space-x-1';
             }
 
+            // 只要選字欄有內容，立即顯示首頁直接批改按鈕區
+            if (text.length > 0) {
+                homeGradingSection.classList.remove('hidden');
+            } else {
+                homeGradingSection.classList.add('hidden');
+            }
+
             // 檢查是否需要顯示中文標點智慧分句
             const hasChinese = /[\u4e00-\u9fa5]/.test(text);
             if (hasChinese && (text.length > 20 || /[，、。！？；]/.test(text))) {
@@ -401,6 +465,47 @@
                 segmentToolbar.classList.add('hidden');
             }
         }
+
+        // ===== 首頁直接批改按鈕功能處理 =====
+        homeGradingUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            e.target.value = '';
+
+            const rawText = inputWords.value.trim();
+            if (!rawText) return showAlert("請先在上方輸入或貼上標準答案！");
+
+            originalWords = rawText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l => l.length > 0);
+            if (originalWords.length === 0) return showAlert("沒有找到有效的標準答案！");
+
+            setupScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            gradingResultContainer.classList.add('hidden');
+            hideGradingStatus();
+            resultSummary.innerText = "直接進行手寫作業紅筆批改";
+
+            showGradingStatus("AI 正在批改手寫默書作業...", "步驟 1/2：分析中英文手寫字跡並與標準答案比對中...", false);
+
+            try {
+                const base64Data = await fileToBase64(file);
+                lastGradingContext = { base64Data: base64Data, mimeType: file.type || "image/jpeg" };
+
+                const result = await callGeminiGrading(base64Data, file.type || "image/jpeg");
+
+                if (result.success) {
+                    hideGradingStatus();
+                    gradingScore.innerText = result.data.scoreSummary || "批改完成";
+                    gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
+                    gradingResultContainer.classList.remove('hidden');
+                    showAlert("AI 紅筆批改完成！");
+                } else {
+                    showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
+                }
+            } catch (err) {
+                const classified = classifyGeminiError(null, null);
+                showGradingStatus(classified.title, classified.detail, true);
+            }
+        });
 
         btnAutoSegment.addEventListener('click', () => {
             let text = inputWords.value.trim();
@@ -430,7 +535,7 @@
             inputWords.value = segments.map((s, idx) => (idx + 1) + ". " + s).join('\n');
             segmentToolbar.classList.add('hidden');
             checkInputLanguageAndSegment();
-            showAlert("已成功按標點符號自動智慧拆分為 " + segments.length + " 個中文默書段落！");
+            showAlert("已成功按標點符號自動智慧獨立拆分為 " + segments.length + " 個中文默書段落！");
         });
 
         // ===== 通用對話框 =====
@@ -561,16 +666,16 @@
             const rate = parseFloat(speechSpeedSelect.value) || 0.5;
             utterance.rate = rate;
 
-            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+            const useCantonese = selectedManualLang === 'cantonese' || /[\u4e00-\u9fa5]/.test(text);
 
-            if (hasChinese) {
+            if (useCantonese) {
                 utterance.lang = 'zh-HK'; // 繁體中文香港粵語核心
             } else {
                 utterance.lang = 'en-GB'; // 英文核心
             }
 
             const voices = window.speechSynthesis.getVoices();
-            if (hasChinese) {
+            if (useCantonese) {
                 const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
                 if (hkVoice) {
                     utterance.voice = hkVoice;
@@ -1057,8 +1162,8 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             const currentText = dictationQueue[currentQueueIndex];
             currentWordDisplay.innerText = currentText;
 
-            const hasChinese = /[\u4e00-\u9fa5]/.test(currentText);
-            if (hasChinese) {
+            const useCantonese = selectedManualLang === 'cantonese' || /[\u4e00-\u9fa5]/.test(currentText);
+            if (useCantonese) {
                 activeLangBadge.innerText = "🇭🇰 中文（粵語）";
                 activeLangBadge.className = "text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md";
             } else {
