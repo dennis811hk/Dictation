@@ -888,9 +888,10 @@ INSTRUCTIONS:
 
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
                 const model = GEMINI_MODELS[mi];
-                const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
+                const apiUrl = "/api/chat";
 
                 const body = JSON.stringify({
+                    model: model,
                     contents: [{ role: "user", parts: parts }],
                     generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
