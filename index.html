@@ -52,7 +52,7 @@
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記）</span></p>
+                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格標點斷句：依標點符號分隔換行，略過手寫筆記）</span></p>
                 <div class="flex space-x-1.5 flex-shrink-0">
                     <button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -254,7 +254,7 @@
         }
 
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v29';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v31';
         let currentLanguage = 'zh';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -331,12 +331,12 @@
             if (lang === 'en') {
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請拍攝或上傳英文課本相片，系統將自動擷取標準英文句子。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，忽略手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳英文課本相片，系統將自動擷取標準英文句子。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依句尾標點符號換行，忽略手寫筆記）</span>";
                 inputWords.placeholder = "1. The children are playing Frisbee.\n2. They play tug of war, and hide-and-seek.";
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span>";
                 inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課……";
             }
         }
@@ -450,7 +450,7 @@
             accumulatedOCRTextResults = [];
             e.target.value = '';
 
-            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（優先提取印刷字，完全忽略手寫筆記）...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（依標點符號精確換行，略過手寫筆記）...", false);
             processNextFileDirectOCR();
         }
 
@@ -466,7 +466,7 @@
             }
 
             const file = pendingFiles[currentFileIndex];
-            showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張（優先提取印刷字，完全忽略手寫筆記）...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張...", false);
 
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -547,8 +547,8 @@
 Look at the image carefully and adhere strictly to these absolute rules:
 1. STRICT TEXTBOOK BODY ONLY (ABSOLUTE PRIORITY): You must extract ONLY the printed textbook reading passage body text.
 2. STARTING POINT RULE: You MUST completely IGNORE unit numbers, chapter headers, titles, and pre-class questions. For Chinese textbook pages starting with "星期三下午", the extraction MUST start EXACTLY with the first sentence of the text: "星期三下午，我上了一節難忘的體育課，" and end at "...籃球運動員！".
-3. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts (like ①, ② in margins), underlines, highlighter marks, and side notes.
-4. For Chinese text, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each phrase or clause with its punctuation is on its own new line.
+3. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts, underlines, highlighter marks, and side notes.
+4. STRICT PUNCTUATION SEPARATION (CRITICAL LIKE FIG 2): For Chinese text, you MUST split sentences and clauses EXACTLY after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each clause ending with its punctuation is placed on its own new line. Never join clauses that belong to separate punctuation breaks.
 5. Return a STRICTLY VALID JSON object with these exact keys:
    - "detectedLang": "zh" or "en"
    - "text": text with clauses separated by line breaks.`;
@@ -562,7 +562,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract dictation text, strictly prioritizing printed textbook text and ignoring all handwritten notes, starting from '星期三' for Chinese. Return valid JSON only." },
+                            { text: "Extract dictation text, strictly prioritizing printed textbook text and strict punctuation line-breaking (as shown in Figure 2). Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -629,7 +629,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
             let formatted = cleanList.map((item, idx) => (idx + 1) + ". " + item);
             inputWords.value = formatted.join('\n');
             hideOcrStatus();
-            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子（已自動過濾手寫筆記）。");
+            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子（已自動依標點分句並過濾手寫筆記）。");
         }
 
         function showOcrStatus(title, detail, showRetry) {
@@ -647,24 +647,25 @@ Look at the image carefully and adhere strictly to these absolute rules:
         function parseTextToQueue(rawText) {
             let rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let queue = [];
-            rawLines.forEach(line => {
-                let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
-                if (!cleanLine) return;
+            let fullCombined = rawLines.map(line => line.replace(/^\d+[\.\)]\s*/, '').trim()).join("");
 
-                if (currentLanguage === 'zh') {
-                    let parts = cleanLine.split(/([，、。！？；…]+)/);
-                    let sentence = "";
-                    for (let i = 0; i < parts.length; i++) {
-                        sentence += parts[i];
-                        if (/[，、。！？；…]/.test(parts[i])) {
-                            if (sentence.trim()) queue.push(sentence.trim());
-                            sentence = "";
-                        }
+            if (currentLanguage === 'zh') {
+                let parts = fullCombined.split(/([，、。！？；…]+)/);
+                let sentence = "";
+                for (let i = 0; i < parts.length; i++) {
+                    sentence += parts[i];
+                    if (/[，、。！？；…]/.test(parts[i])) {
+                        if (sentence.trim()) queue.push(sentence.trim());
+                        sentence = "";
                     }
-                    if (sentence.trim()) {
-                        queue.push(sentence.trim());
-                    }
-                } else {
+                }
+                if (sentence.trim()) {
+                    queue.push(sentence.trim());
+                }
+            } else {
+                rawLines.forEach(line => {
+                    let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
+                    if (!cleanLine) return;
                     let parts = cleanLine.split(/([,.?!;]+(?:\s+|$))/);
                     let currentSeg = "";
                     for (let i = 0; i < parts.length; i++) {
@@ -679,8 +680,8 @@ Look at the image carefully and adhere strictly to these absolute rules:
                     if (currentSeg.trim().length > 0) {
                         queue.push(currentSeg.trim());
                     }
-                }
-            });
+                });
+            }
             return queue;
         }
 
