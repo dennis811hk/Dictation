@@ -42,17 +42,17 @@
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">選擇默書科目／語言</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="btn-lang-en" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200">
+                    <button type="button" id="btn-lang-en" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs">
                         🇬🇧 英文默書
                     </button>
-                    <button type="button" id="btn-lang-zh" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs">
+                    <button type="button" id="btn-lang-zh" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200">
                         🇭🇰 中文（粵語）默書
                     </button>
                 </div>
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span></p>
+                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳英文課本相片，系統將自動擷取標準英文句子。<br><span class="text-blue-500 font-medium">（嚴格標點斷句：依句尾標點符號換行，忽略手寫筆記）</span></p>
                 <div class="flex space-x-1.5 flex-shrink-0">
                     <button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -60,7 +60,8 @@
             </div>
 
             <div class="relative">
-                <textarea id="input-words" rows="6" class="w-full p-3.5 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm leading-relaxed" placeholder="1. 星期三下午，我上了一節難忘的體育課……"></textarea>
+                <textarea id="input-words" rows="6" class="w-full p-3.5 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm leading-relaxed" placeholder="1. The children are playing Frisbee.
+2. They play tug of war, and hide-and-seek."></textarea>
             </div>
 
             <!-- Gemini 視覺載入進度提示框 -->
@@ -129,7 +130,7 @@
         <!-- 畫面 2：默書進行中 -->
         <div id="dictation-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 段 / 共 29 段</span>
+                <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 段 / 共 15 段</span>
                 <button type="button" id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
@@ -254,8 +255,8 @@
         }
 
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v36';
-        let currentLanguage = 'zh';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v38';
+        let currentLanguage = 'en';
 
         const setupScreen = document.getElementById('setup-screen');
         const dictationScreen = document.getElementById('dictation-screen');
@@ -323,7 +324,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
-            setLanguage('zh');
+            setLanguage('en');
         });
 
         function setLanguage(lang) {
@@ -471,16 +472,26 @@
             compressImageToCompressedBase64(file, 1000, 0.6).then(base64Data => {
                 lastOcrContext = { base64Data: base64Data, mimeType: "image/jpeg" };
 
-                callGeminiOCRData(base64Data, "image/jpeg").then((result) => {
+                callGeminiAPI(base64Data, "image/jpeg", "Extract dictation text lines from image. Return valid JSON only.", `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
+Look at the image carefully and extract all text sentences or numbered items. Return a STRICTLY VALID JSON object with these exact keys:
+- "detectedLang": "zh" or "en"
+- "text": extracted text with lines separated by line breaks.`).then((result) => {
                     if (result.success) {
-                        if (result.detectedLang && (result.detectedLang === 'zh' || result.detectedLang === 'en')) {
-                            setLanguage(result.detectedLang);
+                        let parsed = null;
+                        try {
+                            parsed = JSON.parse(result.text);
+                        } catch (err) {
+                            parsed = { text: result.text, detectedLang: currentLanguage };
                         }
-                        accumulatedOCRTextResults.push(formatOCRResultText(result.text, result.detectedLang || currentLanguage));
+
+                        if (parsed && parsed.detectedLang && (parsed.detectedLang === 'zh' || parsed.detectedLang === 'en')) {
+                            setLanguage(parsed.detectedLang);
+                        }
+                        accumulatedOCRTextResults.push(formatOCRResultText(parsed.text || result.text, parsed.detectedLang || currentLanguage));
                         currentFileIndex++;
                         processNextFileDirectOCR();
                     } else {
-                        showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
+                        showOcrStatus("辨識失敗：" + result.error, "請點擊重試按鈕", true);
                     }
                 }).catch(() => {
                     showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
@@ -520,32 +531,24 @@
         btnOcrRetry.addEventListener('click', () => {
             if (!lastOcrContext) return;
             showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
-            callGeminiOCRData(lastOcrContext.base64Data, lastOcrContext.mimeType).then((result) => {
+            callGeminiAPI(lastOcrContext.base64Data, lastOcrContext.mimeType, "Extract dictation text lines from image. Return valid JSON only.", "You are an expert bilingual teacher.").then((result) => {
                 if (result.success) {
-                    if (result.detectedLang) setLanguage(result.detectedLang);
-                    accumulatedOCRTextResults.push(formatOCRResultText(result.text, result.detectedLang || currentLanguage));
+                    let parsed = null;
+                    try { parsed = JSON.parse(result.text); } catch(e) { parsed = { text: result.text }; }
+                    if (parsed.detectedLang) setLanguage(parsed.detectedLang);
+                    accumulatedOCRTextResults.push(formatOCRResultText(parsed.text || result.text, parsed.detectedLang || currentLanguage));
                     hideOcrStatus();
                     currentFileIndex++;
                     processNextFileDirectOCR();
                 } else {
-                    showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
+                    showOcrStatus("重試仍失敗", result.error, true);
                 }
             }).catch(() => {
                 showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
             });
         });
 
-        async function callGeminiOCRData(base64Data, mimeType) {
-            const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
-Look at the image carefully and adhere strictly to these absolute rules:
-1. STRICT TEXTBOOK BODY ONLY (ABSOLUTE PRIORITY): You must extract ONLY the printed textbook reading passage body text.
-2. STARTING POINT RULE: You MUST completely IGNORE unit numbers, chapter headers, titles, and pre-class questions. For Chinese textbook pages starting with "星期三下午", the extraction MUST start EXACTLY with the first sentence of the text: "星期三下午，我上了一節難忘的體育課，" and end at "...籃球運動員！".
-3. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts, underlines, highlighter marks, and side notes.
-4. STRICT PUNCTUATION SEPARATION (CRITICAL LIKE FIG 2): For Chinese text, you MUST split sentences and clauses EXACTLY after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each clause ending with its punctuation is placed on its own new line. Never join clauses that belong to separate punctuation breaks.
-5. Return a STRICTLY VALID JSON object with these exact keys:
-   - "detectedLang": "zh" or "en"
-   - "text": text with clauses separated by line breaks.`;
-
+        async function callGeminiAPI(base64Data, mimeType, userPrompt, systemPrompt) {
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
                 const model = GEMINI_MODELS[mi];
                 const apiUrl = "/api/chat";
@@ -555,7 +558,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract dictation text, strictly prioritizing printed textbook text and strict punctuation line-breaking (as shown in Figure 2). Return valid JSON only." },
+                            { text: userPrompt },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -567,16 +570,22 @@ Look at the image carefully and adhere strictly to these absolute rules:
                 });
 
                 let retries = 3;
-                let response = null;
                 while (retries > 0) {
                     try {
-                        response = await fetch(apiUrl, {
+                        const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: body
                         });
-                        if (response.ok) break;
-                        if (response.status === 503 || response.status === 429) {
+                        if (response.ok) {
+                            const apiResult = await response.json();
+                            const candidate = apiResult.candidates && apiResult.candidates[0];
+                            if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                let textResp = candidate.content.parts[0].text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+                                return { success: true, text: textResp };
+                            }
+                        }
+                        if (response.status === 503 || response.status === 429 || response.status === 500) {
                             retries--;
                             await new Promise(r => setTimeout(r, 2000));
                             continue;
@@ -587,24 +596,8 @@ Look at the image carefully and adhere strictly to these absolute rules:
                         await new Promise(r => setTimeout(r, 2000));
                     }
                 }
-
-                if (response && response.ok) {
-                    const apiResult = await response.json();
-                    const candidate = apiResult.candidates && apiResult.candidates[0];
-                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                        let textResp = candidate.content.parts[0].text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                        try {
-                            const parsed = JSON.parse(textResp);
-                            if (parsed && parsed.text) {
-                                return { success: true, text: parsed.text, detectedLang: parsed.detectedLang };
-                            }
-                        } catch (e) {
-                            return { success: true, text: textResp, detectedLang: null };
-                        }
-                    }
-                }
             }
-            return { success: false, error: { title: "伺服器忙碌", detail: "請點擊重試按鈕再試一次。" } };
+            return { success: false, error: "伺服器忙碌或無法回應" };
         }
 
         function reindexAndAppendText(newTextString) {
@@ -640,41 +633,11 @@ Look at the image carefully and adhere strictly to these absolute rules:
         function parseTextToQueue(rawText) {
             let rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let queue = [];
-            let fullCombined = rawLines.map(line => line.replace(/^\d+[\.\)]\s*/, '').trim()).join("");
-
-            if (currentLanguage === 'zh') {
-                let parts = fullCombined.split(/([，、。！？；…]+)/);
-                let sentence = "";
-                for (let i = 0; i < parts.length; i++) {
-                    sentence += parts[i];
-                    if (/[，、。！？；…]/.test(parts[i])) {
-                        if (sentence.trim()) queue.push(sentence.trim());
-                        sentence = "";
-                    }
-                }
-                if (sentence.trim()) {
-                    queue.push(sentence.trim());
-                }
-            } else {
-                rawLines.forEach(line => {
-                    let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
-                    if (!cleanLine) return;
-                    let parts = cleanLine.split(/([,.?!;]+(?:\s+|$))/);
-                    let currentSeg = "";
-                    for (let i = 0; i < parts.length; i++) {
-                        currentSeg += parts[i];
-                        if (i % 2 === 1) {
-                            if (currentSeg.trim().length > 0) {
-                                queue.push(currentSeg.trim());
-                            }
-                            currentSeg = "";
-                        }
-                    }
-                    if (currentSeg.trim().length > 0) {
-                        queue.push(currentSeg.trim());
-                    }
-                });
-            }
+            rawLines.forEach(line => {
+                let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
+                if (!cleanLine) return;
+                queue.push(cleanLine);
+            });
             return queue;
         }
 
@@ -818,32 +781,49 @@ Look at the image carefully and adhere strictly to these absolute rules:
             if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或選取作業相片！");
             if (originalWords.length === 0) return showAlert("缺少標準答案！");
 
-            showGradingStatus("AI 正在極速批改中...", "正在壓縮作業相片並與標準答案比對...", false);
+            showGradingStatus("AI 正在批改中...", "正在與標準答案進行比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
-                let base64List = [];
-                for (let file of gradingQueueFiles) {
-                    const compressedB64 = await compressImageToCompressedBase64(file, 600, 0.4);
-                    base64List.push({ data: compressedB64, mimeType: "image/jpeg" });
-                }
+                // 取第一張相片進行單檔穩健批改
+                const file = gradingQueueFiles[0];
+                const compressedB64 = await compressImageToCompressedBase64(file, 900, 0.7);
 
-                const result = await callGeminiBatchGrading(base64List);
+                const standardAnswersJSON = JSON.stringify(originalWords);
+                const systemPrompt = `You are a strict primary teacher in Hong Kong.
+STANDARD ANSWERS:
+${standardAnswersJSON}
+
+INSTRUCTIONS:
+1. Compare student handwritten dictation homework photo against the standard answers.
+2. Return a STRICTLY VALID JSON object with exact keys:
+   - "scoreSummary": e.g. "15/15 正確"
+   - "htmlDetails": HTML string comparing student work against standard answers. Use <span class="text-rose-600 line-through">wrong word</span> and <span class="text-emerald-600 font-bold">correct word</span>.
+- Return ONLY valid JSON. No markdown.`;
+
+                const result = await callGeminiAPI(compressedB64, "image/jpeg", "Grade student dictation photo against standard answers. Return valid JSON only.", systemPrompt);
+                
                 if (result.success) {
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(result.text);
+                    } catch (e) {
+                        parsed = { scoreSummary: "批改完成", htmlDetails: "<p>" + result.text + "</p>" };
+                    }
+
                     hideGradingStatus();
-                    gradingScore.innerText = result.data.scoreSummary || "批改完成";
-                    gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改完成。</p>";
+                    gradingScore.innerText = parsed.scoreSummary || "批改完成";
+                    gradingDetails.innerHTML = parsed.htmlDetails || "<p>批改完成。</p>";
                     gradingResultContainer.classList.remove('hidden');
                     showAlert("AI 紅筆批改完成！");
                 } else {
-                    showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
+                    showGradingStatus("批改失敗", result.error, true);
                 }
             } catch (err) {
                 showGradingStatus("網路連線失敗", "無法連線到伺服器。", true);
             }
         });
 
-        // 圖片極速壓縮函式（600px 寬度，0.4 品質，確保 Payload 不超載）
         function compressImageToCompressedBase64(file, maxWidth, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -881,74 +861,6 @@ Look at the image carefully and adhere strictly to these absolute rules:
             gradingStatusDetail.innerText = detail || "";
             if (showRetry) gradingRetryContainer.classList.add('hidden');
             else gradingRetryContainer.classList.remove('hidden');
-        }
-
-        async function callGeminiBatchGrading(base64List) {
-            const simplifiedAnswers = originalWords.map((w, i) => `${i+1}:${w}`).join(';');
-            const systemPrompt = `You are a strict primary teacher in Hong Kong.
-ANSWERS: ${simplifiedAnswers}
-Compare student homework photos against these numbered answers. Return a STRICTLY VALID JSON object with exact keys:
-- "scoreSummary": e.g. "28/29 正確"
-- "htmlDetails": Compact HTML string highlighting errors or correct summary. Use <span class="text-rose-600 line-through">wrong</span> and <span class="text-emerald-600 font-bold">correct</span>.
-- Return ONLY valid JSON. No markdown.`;
-
-            let parts = [{ text: "Grade student dictation photos against standard answers. Return valid JSON only." }];
-            base64List.forEach(item => {
-                parts.push({ inlineData: { mimeType: item.mimeType || "image/jpeg", data: item.data } });
-            });
-
-            for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
-                const model = GEMINI_MODELS[mi];
-                const apiUrl = "/api/chat";
-
-                const body = JSON.stringify({
-                    model: model,
-                    contents: [{ role: "user", parts: parts }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
-                });
-
-                let retries = 3;
-                let response = null;
-                while (retries > 0) {
-                    try {
-                        response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
-                        if (response.ok) break;
-                        if (response.status === 503 || response.status === 429 || response.status === 500) {
-                            retries--;
-                            await new Promise(r => setTimeout(r, 2000));
-                            continue;
-                        }
-                        break;
-                    } catch (e) {
-                        retries--;
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
-                }
-
-                if (response && response.ok) {
-                    try {
-                        const result = await response.json();
-                        let textResp = "";
-                        if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
-                            textResp = result.candidates[0].content.parts[0].text;
-                        } else if (result.text) {
-                            textResp = result.text;
-                        }
-
-                        if (textResp) {
-                            textResp = textResp.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                            const parsed = JSON.parse(textResp);
-                            if (parsed && (parsed.scoreSummary || parsed.htmlDetails)) {
-                                return { success: true, data: parsed };
-                            }
-                        }
-                    } catch (parseErr) {
-                        console.warn("批改結果解析 JSON 失敗...", parseErr);
-                    }
-                }
-            }
-            return { success: false, error: { title: "伺服器忙碌或無回應", detail: "請確認作業照片清晰，然後點擊重試按鈕再試一次。" } };
         }
     </script>
 </body>
