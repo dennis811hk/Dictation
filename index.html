@@ -52,7 +52,7 @@
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="input-hint" class="text-sm text-slate-500">請在下方貼上內容，系統已完美按 29 句標準標點分句。<br><span class="text-blue-500 font-medium">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記）</span></p>
+                <p id="input-hint" class="text-sm text-slate-500">請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class="text-blue-500 font-medium">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記）</span></p>
                 <div class="flex space-x-1.5 flex-shrink-0">
                     <button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -173,7 +173,7 @@
                 <div class="flex items-center space-x-2 text-indigo-900 font-semibold text-sm">
                     <span>✨ Gemini 拍照紅筆批改與比對</span>
                 </div>
-                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照或上傳多張相片，AI 將自動與 29 句標準答案比對並標註錯別字。</p>
+                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照或上傳多張相片，AI 將自動與標準答案比對並標註錯別字。</p>
 
                 <!-- 拍照與上傳按鈕 -->
                 <div class="grid grid-cols-2 gap-3">
@@ -324,35 +324,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
             setLanguage('zh');
-            inputWords.value = `1. 星期三下午，
-2. 我上了一節難忘的體育課，
-3. 讓我比以前更愛上體育課。
-4. 平日在操場上做完熱身運動後，
-5. 大家有時會跑步、
-6. 跳繩，
-7. 有時會進行體能訓練。
-8. 這次可不一樣了，
-9. 李老師讓我們選擇自己喜歡的項目做運動。
-10. 同學們都很興奮，
-11. 有的轉起了呼拉圈，
-12. 有的在體操墊上翻跟頭，
-13. 有的招呼幾個同學來一場三人足球賽……
-14. 我喜歡的運動是花式拍籃球。
-15. 球在我手裏可聽話了，
-16. 我可以拍球轉身，
-17. 讓球穿過雙腿，
-18. 還可以左右手同時運球呢！
-19. 轉眼快到下課的時間了，
-20. 我們圍坐在李老師身旁，
-21. 大家都說做運動很快樂。
-22. 李老師笑着問我們常做運動有甚麼益處，
-23. 我們興高采烈地發表意見。
-24. 我認為運動除了可以改善體能，
-25. 增强抵抗力外，
-26. 還可以舒展身心，
-27. 消除壓力。
-28. 我會堅持認真做運動，
-29. 將來做個籃球運動員！`;
         });
 
         function setLanguage(lang) {
@@ -360,11 +331,13 @@
             if (lang === 'en') {
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請在下方貼上英文詞彙或句子。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，忽略手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳英文課本相片，系統將自動擷取標準英文句子。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，忽略手寫筆記）</span>";
+                inputWords.placeholder = "1. The children are playing Frisbee.\n2. They play tug of war, and hide-and-seek.";
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請在下方貼上中文課文，系統已完美按 29 句標準標點分句。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，忽略手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記）</span>";
+                inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課……";
             }
         }
 
@@ -572,10 +545,10 @@
         async function callGeminiOCRData(base64Data, mimeType) {
             const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
 Look at the image carefully and adhere strictly to these absolute rules:
-1. STRICT TEXTBOOK BODY ONLY (ABSOLUTE PRIORITY): You must extract ONLY the printed textbook reading passage text (starting from "星期三下午..." and ending at "...籃球運動員！").
-2. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts (like ①, ② in the margins), underlines, highlighter marks, and side questions. Only pure printed book text is allowed.
-3. For Chinese text, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each phrase or clause with its punctuation is on its own new line, exactly matching the 29-sentence standard textbook dictation structure.
-4. Detect whether the extracted text is primarily Chinese or English ("zh" or "en").
+1. STRICT TEXTBOOK BODY ONLY (ABSOLUTE PRIORITY): You must extract ONLY the printed textbook reading passage body text.
+2. STARTING POINT RULE: You MUST completely IGNORE unit numbers, chapter headers, titles, and pre-class questions. For Chinese textbook pages starting with "星期三下午", the extraction MUST start EXACTLY with the first sentence of the text: "星期三下午，我上了一節難忘的體育課，" and end at "...籃球運動員！".
+3. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts (like ①, ② in margins), underlines, highlighter marks, and side notes.
+4. For Chinese text, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each phrase or clause with its punctuation is on its own new line.
 5. Return a STRICTLY VALID JSON object with these exact keys:
    - "detectedLang": "zh" or "en"
    - "text": text with clauses separated by line breaks.`;
@@ -589,7 +562,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract dictation text, strictly prioritizing printed textbook text and ignoring all handwritten notes, and split Chinese clauses at every comma. Return valid JSON only." },
+                            { text: "Extract dictation text, strictly prioritizing printed textbook text and ignoring all handwritten notes, starting from '星期三' for Chinese. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -896,7 +869,7 @@ Look at the image carefully and adhere strictly to these absolute rules:
         async function callGeminiBatchGrading(base64List) {
             const standardAnswersJSON = JSON.stringify(originalWords);
             const systemPrompt = `You are a strict primary teacher in Hong Kong.
-STANDARD ANSWERS (29 clauses):
+STANDARD ANSWERS:
 ${standardAnswersJSON}
 
 INSTRUCTIONS:
