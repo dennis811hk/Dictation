@@ -162,10 +162,11 @@
                 <button id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
-            <!-- 當前播放內容預覽提示 -->
-            <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center">
-                <p class="text-xs text-slate-400 mb-1">正在播放語音題目：</p>
-                <p id="current-word-display" class="text-base font-bold text-slate-800 tracking-wide"></p>
+            <!-- 當前播放內容提示（已隱藏文字以防偷看） -->
+            <div class="bg-slate-50 border border-slate-100 p-3.5 rounded-xl text-center space-y-1">
+                <p class="text-xs text-slate-500 font-medium">🎧 專心聆聽語音題目</p>
+                <p id="current-word-display" class="hidden text-base font-bold text-slate-800 tracking-wide"></p>
+                <p class="text-[11px] text-slate-400">答案已隱藏，請用心聽寫默作</p>
             </div>
 
             <div class="flex flex-col items-center justify-center py-2 space-y-3">
@@ -177,13 +178,30 @@
                 <span class="text-xs font-medium text-slate-500">點擊喇叭即可「重播一次」</span>
             </div>
 
-            <div class="space-y-3 pt-2">
-                <button id="btn-next-sentence" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-base">
-                    <span>播下一題</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            <!-- 上一句／下一句控制按鈕 -->
+            <div class="space-y-2 pt-2">
+                <!-- 最後一題時出現的快捷全篇 1.2x 複查按鈕 -->
+                <button id="btn-review-all-fast" class="hidden w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-xl transition shadow-md shadow-amber-100 flex items-center justify-center space-x-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
+                    <span>⚡ 1.2x 快速播放全文複查</span>
                 </button>
+
+                <div class="flex space-x-2">
+                    <button id="btn-prev-sentence" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                        <span>上一題</span>
+                    </button>
+                    <button id="btn-next-sentence" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-base">
+                        <span id="next-btn-text">播下一題</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -334,7 +352,10 @@
         const activeLangBadge = document.getElementById('active-lang-badge');
         const currentWordDisplay = document.getElementById('current-word-display');
         const btnPlayWord = document.getElementById('btn-play-word');
+        const btnPrevSentence = document.getElementById('btn-prev-sentence');
         const btnNextSentence = document.getElementById('btn-next-sentence');
+        const nextBtnText = document.getElementById('next-btn-text');
+        const btnReviewAllFast = document.getElementById('btn-review-all-fast');
         const btnBackSetup = document.getElementById('btn-back-setup');
         const resultTitle = document.getElementById('result-title');
         const resultSummary = document.getElementById('result-summary');
@@ -1134,6 +1155,24 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             const currentText = dictationQueue[currentQueueIndex];
             currentWordDisplay.innerText = currentText;
 
+            // 控管上一題按鈕禁用狀態
+            if (currentQueueIndex === 0) {
+                btnPrevSentence.disabled = true;
+                btnPrevSentence.classList.add('opacity-40', 'cursor-not-allowed');
+            } else {
+                btnPrevSentence.disabled = false;
+                btnPrevSentence.classList.remove('opacity-40', 'cursor-not-allowed');
+            }
+
+            // 判斷是否為最後一題
+            if (currentQueueIndex === dictationQueue.length - 1) {
+                nextBtnText.innerText = "完成默書";
+                btnReviewAllFast.classList.remove('hidden');
+            } else {
+                nextBtnText.innerText = "播下一題";
+                btnReviewAllFast.classList.add('hidden');
+            }
+
             const hasChinese = /[\u4e00-\u9fa5]/.test(currentText);
             if (hasChinese) {
                 activeLangBadge.innerText = "🇭🇰 中文（粵語）";
@@ -1144,13 +1183,87 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             }
         }
 
-        function playCurrentItem() {
+        function playCurrentItem(overrideSpeed) {
             const currentText = dictationQueue[currentQueueIndex];
-            setTimeout(() => speakText(currentText), 250);
+            setTimeout(() => speakText(currentText, overrideSpeed), 250);
+        }
+
+        // 修改語音播放函數，支援指定速播
+        function speakText(text, overrideSpeed) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            const rate = overrideSpeed || parseFloat(speechSpeedSelect.value) || 0.5;
+            utterance.rate = rate;
+
+            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+
+            if (hasChinese) {
+                utterance.lang = 'zh-HK';
+            } else {
+                utterance.lang = 'en-GB';
+            }
+
+            const voices = window.speechSynthesis.getVoices();
+            if (hasChinese) {
+                const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
+                if (hkVoice) {
+                    utterance.voice = hkVoice;
+                } else {
+                    const twOrCnVoice = voices.find(v => v.lang.startsWith('zh'));
+                    if (twOrCnVoice) utterance.voice = twOrCnVoice;
+                }
+            }
+
+            window.speechSynthesis.speak(utterance);
         }
 
         btnPlayWord.addEventListener('click', () => {
             playCurrentItem();
+        });
+
+        // 上一題按鈕
+        btnPrevSentence.addEventListener('click', () => {
+            if (currentQueueIndex > 0) {
+                currentQueueIndex--;
+                updateProgressAndDisplay();
+                playCurrentItem();
+            }
+        });
+
+        // 1.2x 全文快速播放檢查
+        btnReviewAllFast.addEventListener('click', () => {
+            if (dictationQueue.length === 0) return;
+            showAlert("正在以 1.2x 快速播放全文，供小朋友最後對答案。");
+            
+            let index = 0;
+            function playNextInSequence() {
+                if (index >= dictationQueue.length) return;
+                const sentence = dictationQueue[index];
+                
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(sentence);
+                utterance.rate = 1.2;
+                
+                const hasChinese = /[\u4e00-\u9fa5]/.test(sentence);
+                utterance.lang = hasChinese ? 'zh-HK' : 'en-GB';
+
+                const voices = window.speechSynthesis.getVoices();
+                if (hasChinese) {
+                    const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
+                    if (hkVoice) utterance.voice = hkVoice;
+                }
+
+                utterance.onend = () => {
+                    index++;
+                    if (index < dictationQueue.length) {
+                        setTimeout(playNextInSequence, 600);
+                    }
+                };
+                window.speechSynthesis.speak(utterance);
+            }
+            playNextInSequence();
         });
 
         btnNextSentence.addEventListener('click', () => {
