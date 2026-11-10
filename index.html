@@ -893,9 +893,17 @@
             return new Promise(function(resolve, reject) {
                 var systemPrompt = "";
                 if (currentLanguage === 'zh') {
-                    systemPrompt = "You are an expert Chinese teacher for primary students in Hong Kong.\nExtract Chinese dictation sentences or vocabulary words from the image.\nCRITICAL INSTRUCTIONS:\n1. Fix all typos and format correctly.\n2. For Chinese text, after every punctuation mark (such al ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.\n3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.";
+                    systemPrompt = "You are an expert Chinese teacher for primary students in Hong Kong.\n" +
+                        "Look at the uploaded image. If the image contains printed textbook text (印刷字) with some handwritten notes/highlights, EXTRACT ONLY THE PRINTED TEXTBOOK PARAGRAPH OR SENTENCES as the dictation source text. Ignore student handwriting unless it is the only content (全手寫字). If it is a textbook page, extract the main printed story/article.\n" +
+                        "CRITICAL INSTRUCTIONS:\n" +
+                        "1. Extract the clean printed article or sentences from the textbook image.\n" +
+                        "2. For Chinese text, after every punctuation mark (such as ，、。！？；), automatically insert a line break so each sub-clause/phrase is on its own new line.\n" +
+                        "3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...). No extra commentary, no markdown code blocks.";
                 } else {
-                    systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\nExtract dictation sentences from the image carefully.\nCRITICAL INSTRUCTIONS:\n1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
+                    systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\n" +
+                        "Look at the uploaded image. If the image contains printed textbook text, extract the printed sentences. If it is handwritten, extract the handwritten dictation sentences.\n" +
+                        "CRITICAL INSTRUCTIONS:\n" +
+                        "1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
                 }
 
                 var tryModel = function(mi, delay) {
