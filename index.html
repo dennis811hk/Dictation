@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自動默書小幫手 - 智慧防護版</title>
+    <title>自動默書小幫手</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1132,15 +1132,20 @@
             for (var i = 0; i < gradingQueueFiles.length; i++) {
                 (function(item, index) {
                     var wrap = document.createElement('div');
-                    wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200";
+                    wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-xs";
 
                     var img = document.createElement('img');
                     img.src = item.url;
                     img.className = "w-full h-full object-cover";
 
+                    // 順序編號標籤 (1, 2, 3...) 取代原本的 tick
+                    var badge = document.createElement('div');
+                    badge.className = "absolute top-1 left-1 bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center shadow-xs";
+                    badge.innerText = (index + 1);
+
                     var delBtn = document.createElement('button');
                     delBtn.type = "button";
-                    delBtn.className = "absolute top-0.5 right-0.5 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center";
+                    delBtn.className = "absolute top-1 right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center";
                     delBtn.innerHTML = "✕";
                     delBtn.addEventListener('click', function() {
                         gradingQueueFiles.splice(index, 1);
@@ -1148,6 +1153,7 @@
                     });
 
                     wrap.appendChild(img);
+                    wrap.appendChild(badge);
                     wrap.appendChild(delBtn);
                     gradingThumbnails.appendChild(wrap);
                 })(gradingQueueFiles[i], i);
