@@ -790,18 +790,9 @@ Look at the image carefully and extract all text sentences or numbered items. Re
                 const compressedB64 = await compressImageToCompressedBase64(file, 900, 0.7);
 
                 const standardAnswersJSON = JSON.stringify(originalWords);
-                const systemPrompt = `You are a strict primary teacher in Hong Kong.
-STANDARD ANSWERS:
-${standardAnswersJSON}
+                const systemPrompt = "You are a strict primary teacher in Hong Kong. Compare student handwritten dictation homework against standard answers. Return a STRICTLY VALID JSON object with exact keys: 'scoreSummary' (e.g. '15/15 正確') and 'htmlDetails' (HTML string comparing student work against standard answers, using <span class='text-rose-600 line-through'>wrong</span> and <span class='text-emerald-600 font-bold'>correct</span>). Return ONLY valid JSON.";
 
-INSTRUCTIONS:
-1. Compare student handwritten dictation homework photo against the standard answers.
-2. Return a STRICTLY VALID JSON object with exact keys:
-   - "scoreSummary": e.g. "15/15 正確"
-   - "htmlDetails": HTML string comparing student work against standard answers. Use <span class="text-rose-600 line-through">wrong word</span> and <span class="text-emerald-600 font-bold">correct word</span>.
-- Return ONLY valid JSON. No markdown.`;
-
-                const result = await callGeminiAPI(compressedB64, "image/jpeg", "Grade student dictation photo against standard answers. Return valid JSON only.", systemPrompt);
+                const result = await callGeminiAPI(compressedB64, "image/jpeg", "Standard Answers:\n" + standardAnswersJSON + "\n\nGrade student dictation photo against standard answers. Return valid JSON only.", systemPrompt);
                 
                 if (result.success) {
                     let parsed = null;
