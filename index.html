@@ -21,7 +21,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">標準專業版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">專業版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -596,290 +596,48 @@
             rawLines.forEach(line => {
                 let cleanLine = line.replace(/^\d+[\.\)]\s*/, '').trim();
                 if (!cleanLine) return;
-                let regex = currentLanguage === 'zh' ? /([，、。！？；]+(?:\s+|$))/ : /([,.?!;]+(?:\s+|$))/;
-                let parts = cleanLine.split(regex);
-                let currentSeg = "";
-                for (let i = 0; i < parts.length; i++) {
-                    currentSeg += parts[i];
-                    if (i % 2 === 1) {
-                        if (currentSeg.trim().length > 0) queue.push(currentSeg.trim());
-                        currentSeg = "";
+
+                if (currentLanguage === 'zh') {
+                    // 中文：完美復原以前用標點符號（，、。！？；）做換行與短句分隔的邏輯
+                    let parts = cleanLine.split(/([，、。！？；]+(?:\s+|$))/);
+                    let currentSeg = "";
+                    for (let i = 0; i < parts.length; i++) {
+                        currentSeg += parts[i];
+                        if (i % 2 === 1) {
+                            if (currentSeg.trim().length > 0) {
+                                queue.push(currentSeg.trim());
+                            }
+                            currentSeg = "";
+                        }
+                    }
+                    if (currentSeg.trim().length > 0) {
+                        queue.push(currentSeg.trim());
+                    }
+                } else {
+                    // 英文：根據句號、問號、驚嘆號等切分
+                    let parts = cleanLine.split(/([,.?!;]+(?:\s+|$))/);
+                    let currentSeg = "";
+                    for (let i = 0; i < parts.length; i++) {
+                        currentSeg += parts[i];
+                        if (i % 2 === 1) {
+                            if (currentSeg.trim().length > 0) {
+                                queue.push(currentSeg.trim());
+                            }
+                            currentSeg = "";
+                        }
+                    }
+                    if (currentSeg.trim().length > 0) {
+                        queue.push(currentSeg.trim());
                     }
                 }
-                if (currentSeg.trim().length > 0) queue.push(currentSeg.trim());
             });
             return queue;
         }
 
-        btnStart.addEventListener('click', () => {
-            const rawText = inputWords.value.trim();
-            if (!rawText) return showAlert("請先輸入默書內容！");
-            originalWords = parseTextToQueue(rawText);
-            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
-
-            dictationQueue = [...originalWords];
-            currentQueueIndex = 0;
-
-            setupScreen.classList.add('hidden');
-            dictationScreen.classList.remove('hidden');
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-
-            updateProgress();
-            setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
-        });
-
-        btnGotoGrading.addEventListener('click', () => {
-            const rawText = inputWords.value.trim();
-            if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
-            originalWords = parseTextToQueue(rawText);
-            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
-
-            setupScreen.classList.add('hidden');
-            resultScreen.classList.remove('hidden');
-            resultSummary.innerText = "已載入 " + originalWords.length + " 個標準答案段落，請直接上傳手寫作業進行 AI 批改！";
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-            gradingQueueFiles = [];
-            renderGradingThumbnails();
-        });
-
-        function updateProgress() {
-            progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
-            if (currentQueueIndex === dictationQueue.length - 1) {
-                fullReviewContainer.classList.remove('hidden');
-            } else {
-                fullReviewContainer.classList.add('hidden');
-            }
-        }
-
-        btnPlayWord.addEventListener('click', () => {
-            if (dictationQueue[currentQueueIndex]) speakText(dictationQueue[currentQueueIndex]);
-        });
-
-        btnPrevSentence.addEventListener('click', () => {
-            if (currentQueueIndex > 0) {
-                currentQueueIndex--;
-                updateProgress();
-                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
-            }
-        });
-
-        btnNextSentence.addEventListener('click', () => {
-            currentQueueIndex++;
-            if (currentQueueIndex < dictationQueue.length) {
-                updateProgress();
-                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
-            } else {
-                dictationScreen.classList.add('hidden');
-                resultScreen.classList.remove('hidden');
-                resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！";
-                gradingQueueFiles = [];
-                renderGradingThumbnails();
-            }
-        });
-
-        btnFullReview.addEventListener('click', () => {
-            if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            let idx = 0;
-            const playNextInFull = () => {
-                if (idx < dictationQueue.length) {
-                    let utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
-                    utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2;
-                    utterance.lang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
-                    utterance.onend = () => {
-                        idx++;
-                        setTimeout(playNextInFull, 600);
-                    };
-                    window.speechSynthesis.speak(utterance);
-                }
-            };
-            playNextInFull();
-        });
-
-        btnBackSetup.addEventListener('click', () => {
-            dictationScreen.classList.add('hidden');
-            setupScreen.classList.remove('hidden');
-        });
-
-        btnRetryAll.addEventListener('click', () => {
-            currentQueueIndex = 0;
-            resultScreen.classList.add('hidden');
-            dictationScreen.classList.remove('hidden');
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-            updateProgress();
-            setTimeout(() => speakText(dictationQueue[0]), 300);
-        });
-
-        btnRestart.addEventListener('click', () => {
-            resultScreen.classList.add('hidden');
-            setupScreen.classList.remove('hidden');
-        });
-
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
-            utterance.lang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
-            utterance.pitch = 1.0;
-            setTimeout(() => window.speechSynthesis.speak(utterance), 50);
-        }
-
-        gradingCamera.addEventListener('change', handleGradingFilesInput);
-        gradingGallery.addEventListener('change', handleGradingFilesInput);
-
-        function handleGradingFilesInput(e) {
-            const files = Array.from(e.target.files);
-            if (!files || files.length === 0) return;
-            e.target.value = '';
-            if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！");
-
-            let p = Promise.resolve();
-            files.forEach(file => {
-                p = p.then(() => compressImageFile(file)).then(compressed => {
-                    gradingQueueFiles.push(compressed);
-                });
-            });
-            p.then(() => renderGradingThumbnails());
-        }
-
-        function compressImageFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let w = img.width, h = img.height;
-                        let maxDim = 1200;
-                        if (w > maxDim || h > maxDim) {
-                            if (w / h > 1) { h = Math.round(h * maxDim / w); w = maxDim; }
-                            else { w = Math.round(w * maxDim / h); h = maxDim; }
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob((blob) => {
-                            const compReader = new FileReader();
-                            compReader.onload = () => {
-                                const base64Full = compReader.result;
-                                resolve({
-                                    base64Data: base64Full.split(',')[1],
-                                    mimeType: "image/jpeg",
-                                    url: URL.createObjectURL(blob)
-                                });
-                            };
-                            compReader.readAsDataURL(blob);
-                        }, 'image/jpeg', 0.8);
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function renderGradingThumbnails() {
-            if (gradingQueueFiles.length === 0) {
-                gradingPreviewContainer.classList.add('hidden');
-                gradingThumbnails.innerHTML = '';
-                return;
-            }
-            gradingPreviewContainer.classList.remove('hidden');
-            gradingPhotoCount.innerText = gradingQueueFiles.length;
-            gradingThumbnails.innerHTML = '';
-
-            gradingQueueFiles.forEach((item, index) => {
-                const wrap = document.createElement('div');
-                wrap.className = "relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-xs";
-
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.className = "w-full h-full object-cover";
-
-                const badge = document.createElement('div');
-                badge.className = "absolute top-1 left-1 bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center shadow-xs";
-                badge.innerText = (index + 1);
-
-                const delBtn = document.createElement('button');
-                delBtn.type = "button";
-                delBtn.className = "absolute top-1 right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center";
-                delBtn.innerHTML = "✕";
-                delBtn.addEventListener('click', () => {
-                    gradingQueueFiles.splice(index, 1);
-                    renderGradingThumbnails();
-                });
-
-                wrap.appendChild(img);
-                wrap.appendChild(badge);
-                wrap.appendChild(delBtn);
-                gradingThumbnails.appendChild(wrap);
-            });
-        }
-
-        btnSubmitGrading.addEventListener('click', submitGradingExecution);
-        btnGradingRetry.addEventListener('click', submitGradingExecution);
-
-        function submitGradingExecution() {
-            if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或上傳最少一張作業相片！");
-
-            showGradingStatus("AI 正在批改手寫默書...", "分析 " + gradingQueueFiles.length + " 頁手寫字跡中，請稍候...", false);
-            gradingResultContainer.classList.add('hidden');
-
-            const imagesPayload = gradingQueueFiles.map(item => ({
-                base64Data: item.base64Data,
-                mimeType: item.mimeType
-            }));
-
-            callGeminiGradingMulti(imagesPayload).then(result => {
-                if (result.success) {
-                    hideGradingStatus();
-                    gradingScore.innerText = result.data.scoreSummary || "批改完成";
-                    gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
-                    gradingResultContainer.classList.remove('hidden');
-                    showAlert("AI 紅筆批改完成！");
-                } else {
-                    showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
-                }
-            }).catch(() => {
-                showGradingStatus("網路連線失敗", "無法連線到伺服器。", true);
-            });
-        }
-
-        function showGradingStatus(title, detail, showRetry) {
-            gradingStatusContainer.classList.remove('hidden');
-            gradingStatusText.innerText = title;
-            gradingStatusDetail.innerText = detail || "";
-            if (showRetry) gradingRetryContainer.classList.remove('hidden');
-            else gradingRetryContainer.classList.add('hidden');
-        }
-
-        function hideGradingStatus() {
-            gradingStatusContainer.classList.add('hidden');
-            gradingRetryContainer.classList.add('hidden');
-        }
-
-        async function callGeminiGradingMulti(imageArray) {
-            const standardAnswersJSON = JSON.stringify(originalWords);
-            const langName = currentLanguage === 'zh' ? 'Chinese Dictation' : 'English Dictation';
-            const systemPrompt = `You are a strict but fair primary school teacher in Hong Kong (${langName}).
-
-STANDARD ANSWERS:
-${standardAnswersJSON}
-
-YOUR TASK:
-1. Compare student photos against standard answers IN EXACT CHRONOLOGICAL ORDER of the photos provided.
-2. Return a STRICTLY VALID JSON object with exact keys:
-   - "scoreSummary": string like "8/10 正確"
-   - "htmlDetails": string of HTML. Wrap mistakes in <span class="text-rose-600 line-through">wrong</span>, correct in <span class="text-emerald-600 font-bold">correct</span>.
-Return ONLY valid JSON.`;
-
-            let userParts = [{ text: "Grade the student's handwritten dictation paper photos in order. Return valid JSON only." }];
-            imageArray.forEach(img => {
-                userParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64Data } });
-            });
+        async function callGeminiOCRData(base64Data, mimeType) {
+            const systemPrompt = currentLanguage === 'zh' ?
+                "You are an expert Chinese teacher in Hong Kong. Look at the image: extract Chinese dictation sentences or text passages. Ensure correct Chinese punctuation (，、。！？；). Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...)." :
+                "You are an expert English teacher in Hong Kong. Look at the image: extract clean dictation sentences. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...).";
 
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
                 const model = GEMINI_MODELS[mi];
@@ -887,11 +645,13 @@ Return ONLY valid JSON.`;
 
                 const body = JSON.stringify({
                     model: model,
-                    contents: [{ role: "user", parts: userParts }],
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        temperature: 0.2
-                    },
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: currentLanguage === 'zh' ? "Extract the Chinese dictation text list from this image." : "Extract the English dictation list from this image." },
+                            { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
+                        ]
+                    }],
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
@@ -918,16 +678,11 @@ Return ONLY valid JSON.`;
                 }
 
                 if (response && response.ok) {
-                    const result = await response.json();
-                    const candidate = result.candidates && result.candidates[0];
+                    const apiResult = await response.json();
+                    const candidate = apiResult.candidates && apiResult.candidates[0];
                     if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                        let textResp = candidate.content.parts[0].text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                        try {
-                            const parsed = JSON.parse(textResp);
-                            return { success: true, data: parsed };
-                        } catch (e) {
-                            return { success: true, data: { scoreSummary: "批改完成", htmlDetails: textResp } };
-                        }
+                        let aiText = candidate.content.parts[0].text.trim().replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                        if (aiText) return { success: true, text: aiText };
                     }
                 }
             }
