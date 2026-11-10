@@ -450,7 +450,7 @@
             accumulatedOCRTextResults = [];
             e.target.value = '';
 
-            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（優先提取印刷字）...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（優先提取印刷字，忽略手寫筆記）...", false);
             processNextFileDirectOCR();
         }
 
@@ -466,7 +466,7 @@
             }
 
             const file = pendingFiles[currentFileIndex];
-            showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張（優先提取印刷字）...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張（優先提取印刷字，忽略手寫筆記）...", false);
 
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -545,7 +545,7 @@
         async function callGeminiOCRData(base64Data, mimeType) {
             const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
 Look at the image carefully:
-1. STRICT RULE: If the image contains both printed text (e.g. textbook body text) and handwritten notes or markings, IGNORE the handwriting and extract ONLY the printed text. Only if there is NO printed text at all in the image should you extract handwritten text.
+1. STRICT RULE (PRINTED TEXT PRIORITY): If the image contains both printed text (e.g. textbook body text, printed exercises) AND handwritten notes, ticks, corrections, or student handwriting, you MUST IGNORE all handwriting and extract ONLY the printed text. Only if there is absolutely NO printed text on the page should you extract handwritten text.
 2. Detect whether the extracted text is primarily Chinese or English ("zh" or "en").
 3. For Chinese, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), or semicolon (；) so that each phrase or clause with its punctuation is on its own new line.
 4. Return a STRICTLY VALID JSON object with these exact keys:
@@ -561,7 +561,7 @@ Look at the image carefully:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract dictation text, prioritizing printed text over handwriting, and split Chinese clauses at every comma. Return valid JSON only." },
+                            { text: "Extract dictation text, strictly prioritizing printed text over handwriting and ignoring all handwritten notes, and split Chinese clauses at every comma. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -628,7 +628,7 @@ Look at the image carefully:
             let formatted = cleanList.map((item, idx) => (idx + 1) + ". " + item);
             inputWords.value = formatted.join('\n');
             hideOcrStatus();
-            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子。");
+            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子（已自動過濾手寫筆記）。");
         }
 
         function showOcrStatus(title, detail, showRetry) {
