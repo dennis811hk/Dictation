@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自動默書小幫手</title>
+    <title>自動默書小幫手 - 粵漢雙語旗艦版</title>
+    
+    <!-- PWA 支援設定 -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%E8%87%AA%E5%8B%95%E9%BB%98%E6%9B%B8%E5%B0%8f%E5%B9%AB%E6%89%8B%22%2C%22short_name%22%3A%22%E9%BB%98%E6%9B%B8%E5%B0%8f%E5%B9%AB%E6%89%8B%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%7D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2563eb">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,7 +28,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">智慧旗艦版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">粵漢雙語 Pro 版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -236,8 +243,18 @@
     </div>
 
     <script>
+        // PWA Service Worker 註冊
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `self.addEventListener('install', e => { self.skipWaiting(); }); self.addEventListener('activate', e => { self.clients.claim(); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });`;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(() => {});
+            });
+        }
+
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v25';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v27';
         let currentLanguage = 'en';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -489,7 +506,6 @@
                 if (l) {
                     let pureText = l.replace(/^\d+[\.\)]\s*/, '');
                     if (lang === 'zh') {
-                        // 中文：確保每個逗號與標點符號後自動換行
                         let parts = pureText.split(/([，、。！？；]+)/);
                         let sentence = "";
                         for (let i = 0; i < parts.length; i++) {
@@ -635,7 +651,6 @@ Look at the image carefully:
                 if (!cleanLine) return;
 
                 if (currentLanguage === 'zh') {
-                    // 中文：每個逗號或標點符號換行到下一行
                     let parts = cleanLine.split(/([，、。！？；]+)/);
                     let sentence = "";
                     for (let i = 0; i < parts.length; i++) {
@@ -837,8 +852,8 @@ Look at the image carefully:
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
             gradingStatusDetail.innerText = detail || "";
-            if (showRetry) gradingRetryContainer.classList.remove('hidden');
-            else gradingRetryContainer.classList.add('hidden');
+            if (showRetry) gradingRetryContainer.classList.add('hidden');
+            else gradingRetryContainer.classList.remove('hidden');
         }
 
         async function callGeminiBatchGrading(base64List) {
