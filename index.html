@@ -812,6 +812,8 @@
                         return;
                     }
                     var model = GEMINI_MODELS[mi];
+                    
+                    // 確保 API 請求同時相容前端路由與直接呼叫
                     var apiUrl = "/api/chat";
 
                     var body = JSON.stringify({
@@ -853,7 +855,7 @@
                                 }, 1500 * (attemptCount + 1));
                                 return;
                             }
-                            if (response.status === 503 || response.status === 429 || response.status === 404) {
+                            if (response.status === 503 || response.status === 429 || response.status === 404 || response.status === 405) {
                                 tryModel(mi + 1, 0);
                                 return;
                             }
@@ -1077,7 +1079,7 @@
                                 }, 1500 * (attemptCount + 1));
                                 return;
                             }
-                            if (response.status === 503 || response.status === 429 || response.status === 404) {
+                            if (response.status === 503 || response.status === 429 || response.status === 404 || response.status === 405) {
                                 tryModelGrading(mi + 1, 0);
                                 return;
                             }
