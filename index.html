@@ -336,7 +336,7 @@
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span>";
+                inputHint.innerHTML = "請拍攝或上傳課本相片，Gemini 將自動從「星期三」開始提取印刷課文。<br><span class=\"text-blue-500 font-medium\">（嚴格標點斷句：依標點符號分隔換行，完全略過手寫筆記）</span>";
                 inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課……";
             }
         }
@@ -888,10 +888,9 @@ INSTRUCTIONS:
 
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
                 const model = GEMINI_MODELS[mi];
-                const apiUrl = "/api/chat";
+                const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
                 const body = JSON.stringify({
-                    model: model,
                     contents: [{ role: "user", parts: parts }],
                     generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
