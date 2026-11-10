@@ -315,85 +315,30 @@
     </div>
 
     <script>
-        // ===== PWA 自動註冊 Service Worker (加入安全防錯) =====
+        // ===== PWA 自動註冊 Service Worker (強化 Android 8 獨立視窗防錯) =====
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 try {
-                    navigator.serviceWorker.register('/sw.js')
-                        .then(function(reg) { console.log('SW 註冊成功'); })
-                        .catch(function(err) { console.log('SW 註冊忽略'); });
+                    navigator.serviceWorker.register('/sw.js').catch(function(err) {});
                 } catch(e) {}
             });
         }
 
-        // ===== 核心設定（完全相容 Android 8.0 至最新 Android 17） =====
+        // ===== 核心設定（完全相容 Android 8.0 至最新 Android 17 及 PWA 桌面啟動） =====
         var GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         var currentGeminiModel = GEMINI_MODELS[0];
-        var STORAGE_KEY = 'my_dictation_saved_lists_v15';
+        var STORAGE_KEY = 'my_dictation_saved_lists_v16';
 
         var currentLanguage = 'en';
 
-        // ===== DOM 元素綁定 =====
-        var setupScreen = document.getElementById('setup-screen');
-        var dictationScreen = document.getElementById('dictation-screen');
-        var resultScreen = document.getElementById('result-screen');
-        var inputWords = document.getElementById('input-words');
-        var inputHint = document.getElementById('input-hint');
-        var btnLangEn = document.getElementById('btn-lang-en');
-        var btnLangZh = document.getElementById('btn-lang-zh');
-
-        var btnStart = document.getElementById('btn-start');
-        var btnGotoGrading = document.getElementById('btn-goto-grading');
-        var cameraUpload = document.getElementById('camera-upload');
-        var galleryUpload = document.getElementById('gallery-upload');
-        var ocrStatusContainer = document.getElementById('ocr-status-container');
-        var ocrStatusText = document.getElementById('ocr-status-text');
-        var ocrStatusDetail = document.getElementById('ocr-status-detail');
-        var ocrRetryContainer = document.getElementById('ocr-retry-container');
-        var btnOcrRetry = document.getElementById('btn-ocr-retry');
-        var speechSpeedSelect = document.getElementById('speech-speed');
-
-        var btnSelectAll = document.getElementById('btn-select-all');
-        var btnClearAll = document.getElementById('btn-clear-all');
-        var gradingCamera = document.getElementById('grading-camera');
-        var gradingGallery = document.getElementById('grading-gallery');
-        var gradingPreviewContainer = document.getElementById('grading-preview-container');
-        var gradingPhotoCount = document.getElementById('grading-photo-count');
-        var gradingThumbnails = document.getElementById('grading-thumbnails');
-        var btnSubmitGrading = document.getElementById('btn-submit-grading');
-
-        var gradingStatusContainer = document.getElementById('grading-status-container');
-        var gradingStatusText = document.getElementById('grading-status-text');
-        var gradingStatusDetail = document.getElementById('grading-status-detail');
-        var gradingRetryContainer = document.getElementById('grading-retry-container');
-        var btnGradingRetry = document.getElementById('btn-grading-retry');
-        var gradingResultContainer = document.getElementById('grading-result-container');
-        var gradingScore = document.getElementById('grading-score');
-        var gradingDetails = document.getElementById('grading-details');
-
-        var progressIndicator = document.getElementById('progress-indicator');
-        var btnPlayWord = document.getElementById('btn-play-word');
-        var btnPrevSentence = document.getElementById('btn-prev-sentence');
-        var btnNextSentence = document.getElementById('btn-next-sentence');
-        var fullReviewContainer = document.getElementById('full-review-container');
-        var btnFullReview = document.getElementById('btn-full-review');
-        var btnBackSetup = document.getElementById('btn-back-setup');
-        var resultSummary = document.getElementById('result-summary');
-        var btnRetryAll = document.getElementById('btn-retry-all');
-        var btnRestart = document.getElementById('btn-restart');
-
-        var customModal = document.getElementById('custom-modal');
-        var modalMessage = document.getElementById('modal-message');
-        var modalClose = document.getElementById('modal-close');
-        var btnSaveCurrent = document.getElementById('btn-save-current');
-        var savedListsContainer = document.getElementById('saved-lists-container');
-
-        var cropModal = document.getElementById('crop-modal');
-        var cropModalTitle = document.getElementById('crop-modal-title');
-        var cropCanvas = document.getElementById('crop-canvas');
-        var ctxCrop = cropCanvas ? cropCanvas.getContext('2d') : null;
-        var btnSkipCrop = document.getElementById('btn-skip-crop');
-        var btnConfirmCrop = document.getElementById('btn-confirm-crop');
+        // ===== DOM 元素安全綁定與防錯 =====
+        var setupScreen, dictationScreen, resultScreen, inputWords, inputHint, btnLangEn, btnLangZh;
+        var btnStart, btnGotoGrading, cameraUpload, galleryUpload, ocrStatusContainer, ocrStatusText, ocrStatusDetail, ocrRetryContainer, btnOcrRetry, speechSpeedSelect;
+        var btnSelectAll, btnClearAll, gradingCamera, gradingGallery, gradingPreviewContainer, gradingPhotoCount, gradingThumbnails, btnSubmitGrading;
+        var gradingStatusContainer, gradingStatusText, gradingStatusDetail, gradingRetryContainer, btnGradingRetry, gradingResultContainer, gradingScore, gradingDetails;
+        var progressIndicator, btnPlayWord, btnPrevSentence, btnNextSentence, fullReviewContainer, btnFullReview, btnBackSetup, resultSummary, btnRetryAll, btnRestart;
+        var customModal, modalMessage, modalClose, btnSaveCurrent, savedListsContainer;
+        var cropModal, cropModalTitle, cropCanvas, ctxCrop, btnSkipCrop, btnConfirmCrop;
 
         // ===== 狀態變數 =====
         var originalWords = [];
@@ -411,18 +356,82 @@
         var lastOcrContext = null;
         var gradingQueueFiles = [];
 
-        // ===== 初始化 =====
+        // ===== 安全初始化 =====
         window.addEventListener('DOMContentLoaded', function() {
-            renderSavedLists();
-            setLanguage('en');
+            try {
+                setupScreen = document.getElementById('setup-screen');
+                dictationScreen = document.getElementById('dictation-screen');
+                resultScreen = document.getElementById('result-screen');
+                inputWords = document.getElementById('input-words');
+                inputHint = document.getElementById('input-hint');
+                btnLangEn = document.getElementById('btn-lang-en');
+                btnLangZh = document.getElementById('btn-lang-zh');
+
+                btnStart = document.getElementById('btn-start');
+                btnGotoGrading = document.getElementById('btn-goto-grading');
+                cameraUpload = document.getElementById('camera-upload');
+                galleryUpload = document.getElementById('gallery-upload');
+                ocrStatusContainer = document.getElementById('ocr-status-container');
+                ocrStatusText = document.getElementById('ocr-status-text');
+                ocrStatusDetail = document.getElementById('ocr-status-detail');
+                ocrRetryContainer = document.getElementById('ocr-retry-container');
+                btnOcrRetry = document.getElementById('btn-ocr-retry');
+                speechSpeedSelect = document.getElementById('speech-speed');
+
+                btnSelectAll = document.getElementById('btn-select-all');
+                btnClearAll = document.getElementById('btn-clear-all');
+                gradingCamera = document.getElementById('grading-camera');
+                gradingGallery = document.getElementById('grading-gallery');
+                gradingPreviewContainer = document.getElementById('grading-preview-container');
+                gradingPhotoCount = document.getElementById('grading-photo-count');
+                gradingThumbnails = document.getElementById('grading-thumbnails');
+                btnSubmitGrading = document.getElementById('btn-submit-grading');
+
+                gradingStatusContainer = document.getElementById('grading-status-container');
+                gradingStatusText = document.getElementById('grading-status-text');
+                gradingStatusDetail = document.getElementById('grading-status-detail');
+                gradingRetryContainer = document.getElementById('grading-retry-container');
+                btnGradingRetry = document.getElementById('btn-grading-retry');
+                gradingResultContainer = document.getElementById('grading-result-container');
+                gradingScore = document.getElementById('grading-score');
+                gradingDetails = document.getElementById('grading-details');
+
+                progressIndicator = document.getElementById('progress-indicator');
+                btnPlayWord = document.getElementById('btn-play-word');
+                btnPrevSentence = document.getElementById('btn-prev-sentence');
+                btnNextSentence = document.getElementById('btn-next-sentence');
+                fullReviewContainer = document.getElementById('full-review-container');
+                btnFullReview = document.getElementById('btn-full-review');
+                btnBackSetup = document.getElementById('btn-back-setup');
+                resultSummary = document.getElementById('result-summary');
+                btnRetryAll = document.getElementById('btn-retry-all');
+                btnRestart = document.getElementById('btn-restart');
+
+                customModal = document.getElementById('custom-modal');
+                modalMessage = document.getElementById('modal-message');
+                modalClose = document.getElementById('modal-close');
+                btnSaveCurrent = document.getElementById('btn-save-current');
+                savedListsContainer = document.getElementById('saved-lists-container');
+
+                cropModal = document.getElementById('crop-modal');
+                cropModalTitle = document.getElementById('crop-modal-title');
+                cropCanvas = document.getElementById('crop-canvas');
+                ctxCrop = cropCanvas ? cropCanvas.getContext('2d') : null;
+                btnSkipCrop = document.getElementById('btn-skip-crop');
+                btnConfirmCrop = document.getElementById('btn-confirm-crop');
+
+                renderSavedLists();
+                setLanguage('en');
+                initEventListeners();
+            } catch (err) {
+                console.error("Init Error:", err);
+            }
         });
 
         // ===== 語言切換邏輯 =====
-        btnLangEn.addEventListener('click', function() { setLanguage('en'); });
-        btnLangZh.addEventListener('click', function() { setLanguage('zh'); });
-
         function setLanguage(lang) {
             currentLanguage = lang;
+            if (!btnLangEn || !btnLangZh || !inputHint || !inputWords) return;
             if (lang === 'en') {
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
@@ -438,13 +447,274 @@
 
         // ===== 通用對話框 =====
         function showAlert(msg) {
+            if (!modalMessage || !customModal) return;
             modalMessage.innerText = msg;
             customModal.classList.remove('hidden');
         }
-        modalClose.addEventListener('click', function() { customModal.classList.add('hidden'); });
-        customModal.addEventListener('click', function(e) {
-            if (e.target === customModal) customModal.classList.add('hidden');
-        });
+
+        // ===== 事件監聽安全綁定 =====
+        function initEventListeners() {
+            if (btnLangEn) btnLangEn.addEventListener('click', function() { setLanguage('en'); });
+            if (btnLangZh) btnLangZh.addEventListener('click', function() { setLanguage('zh'); });
+
+            if (modalClose) modalClose.addEventListener('click', function() { customModal.classList.add('hidden'); });
+            if (customModal) {
+                customModal.addEventListener('click', function(e) {
+                    if (e.target === customModal) customModal.classList.add('hidden');
+                });
+            }
+
+            if (btnSaveCurrent) {
+                btnSaveCurrent.addEventListener('click', function() {
+                    var text = inputWords.value.trim();
+                    if (!text) return showAlert("沒有內容可供儲存！");
+                    var firstLine = text.split('\n')[0].trim();
+                    var defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
+                    var titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
+                    if (!titleName) return;
+                    var lists = loadSavedLists();
+                    lists.unshift({ id: Date.now(), title: titleName.trim(), content: text, lang: currentLanguage });
+                    if (lists.length > 20) lists.pop();
+                    saveListsToStorage(lists);
+                    renderSavedLists();
+                    showAlert("「" + titleName + "」已成功儲存！");
+                });
+            }
+
+            var isAllSelected = false;
+            if (btnSelectAll) {
+                btnSelectAll.addEventListener('click', function() {
+                    inputWords.focus();
+                    if (!isAllSelected) {
+                        inputWords.select();
+                        btnSelectAll.innerText = "取消全選";
+                        isAllSelected = true;
+                    } else {
+                        inputWords.setSelectionRange(inputWords.value.length, inputWords.value.length);
+                        btnSelectAll.innerText = "全選";
+                        isAllSelected = false;
+                    }
+                });
+            }
+
+            if (btnClearAll) {
+                btnClearAll.addEventListener('click', function() {
+                    if (inputWords.value.trim() === '') return;
+                    if (confirm("確定要清除全部文字嗎？")) {
+                        inputWords.value = '';
+                        isAllSelected = false;
+                        if (btnSelectAll) btnSelectAll.innerText = "全選";
+                    }
+                });
+            }
+
+            if (cameraUpload) cameraUpload.addEventListener('change', handleImageUpload);
+            if (galleryUpload) galleryUpload.addEventListener('change', handleImageUpload);
+
+            if (btnConfirmCrop) {
+                btnConfirmCrop.addEventListener('click', function() {
+                    if (cropModal) cropModal.classList.add('hidden');
+                    executeGeminiVision(false);
+                });
+            }
+
+            if (btnSkipCrop) {
+                btnSkipCrop.addEventListener('click', function() {
+                    if (cropModal) cropModal.classList.add('hidden');
+                    if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
+                    executeGeminiVision(true);
+                });
+            }
+
+            if (btnOcrRetry) {
+                btnOcrRetry.addEventListener('click', function() {
+                    if (!lastOcrContext) return;
+                    showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
+                    callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
+                        if (result.success) {
+                            accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                            hideOcrStatus();
+                            currentFileIndex++;
+                            processNextFileForCrop();
+                        } else {
+                            showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
+                        }
+                    }).catch(function(err) {
+                        var classified = classifyGeminiError(null, null);
+                        showOcrStatus(classified.title, classified.detail, true);
+                    });
+                });
+            }
+
+            if (btnStart) {
+                btnStart.addEventListener('click', function() {
+                    var rawText = inputWords.value.trim();
+                    if (!rawText) return showAlert("請先輸入默書內容！");
+
+                    originalWords = parseTextToQueue(rawText);
+                    if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
+
+                    dictationQueue = originalWords.slice(0);
+                    currentQueueIndex = 0;
+
+                    if (setupScreen) setupScreen.classList.add('hidden');
+                    if (dictationScreen) dictationScreen.classList.remove('hidden');
+                    if (gradingResultContainer) gradingResultContainer.classList.add('hidden');
+                    hideGradingStatus();
+
+                    updateProgress();
+                    setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
+                });
+            }
+
+            if (btnGotoGrading) {
+                btnGotoGrading.addEventListener('click', function() {
+                    var rawText = inputWords.value.trim();
+                    if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
+
+                    originalWords = parseTextToQueue(rawText);
+                    if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
+
+                    if (setupScreen) setupScreen.classList.add('hidden');
+                    if (resultScreen) resultScreen.classList.remove('hidden');
+                    if (resultSummary) resultSummary.innerText = "已載入 " + originalWords.length + " 個標準答案段落，請直接上傳手寫作業進行 AI 批改！";
+                    if (gradingResultContainer) gradingResultContainer.classList.add('hidden');
+                    hideGradingStatus();
+                    gradingQueueFiles = [];
+                    renderGradingThumbnails();
+                });
+            }
+
+            if (btnPlayWord) {
+                btnPlayWord.addEventListener('click', function() {
+                    if (dictationQueue[currentQueueIndex]) {
+                        speakText(dictationQueue[currentQueueIndex]);
+                    }
+                });
+            }
+
+            if (btnPrevSentence) {
+                btnPrevSentence.addEventListener('click', function() {
+                    if (currentQueueIndex > 0) {
+                        currentQueueIndex--;
+                        updateProgress();
+                        setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
+                    }
+                });
+            }
+
+            if (btnNextSentence) {
+                btnNextSentence.addEventListener('click', function() {
+                    currentQueueIndex++;
+                    if (currentQueueIndex < dictationQueue.length) {
+                        updateProgress();
+                        setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
+                    } else {
+                        if (dictationScreen) dictationScreen.classList.add('hidden');
+                        if (resultScreen) resultScreen.classList.remove('hidden');
+                        if (resultSummary) resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！";
+                        gradingQueueFiles = [];
+                        renderGradingThumbnails();
+                    }
+                });
+            }
+
+            if (btnFullReview) {
+                btnFullReview.addEventListener('click', function() {
+                    if (!('speechSynthesis' in window)) return;
+                    try { window.speechSynthesis.cancel(); } catch (e) {}
+
+                    var idx = 0;
+                    var playNextInFull = function() {
+                        if (idx < dictationQueue.length) {
+                            var utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
+                            utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2;
+                            utterance.lang = (currentLanguage === 'zh' ? 'zh-HK' : 'en-GB');
+                            utterance.onend = function() {
+                                idx++;
+                                setTimeout(playNextInFull, 600);
+                            };
+                            try { window.speechSynthesis.speak(utterance); } catch (e) {}
+                        }
+                    };
+                    playNextInFull();
+                });
+            }
+
+            if (btnBackSetup) {
+                btnBackSetup.addEventListener('click', function() {
+                    if (dictationScreen) dictationScreen.classList.add('hidden');
+                    if (setupScreen) setupScreen.classList.remove('hidden');
+                });
+            }
+
+            if (btnRetryAll) {
+                btnRetryAll.addEventListener('click', function() {
+                    currentQueueIndex = 0;
+                    if (resultScreen) resultScreen.classList.add('hidden');
+                    if (dictationScreen) dictationScreen.classList.remove('hidden');
+                    if (gradingResultContainer) gradingResultContainer.classList.add('hidden');
+                    hideGradingStatus();
+                    updateProgress();
+                    setTimeout(function() { speakText(dictationQueue[0]); }, 300);
+                });
+            }
+
+            if (btnRestart) {
+                btnRestart.addEventListener('click', function() {
+                    if (resultScreen) resultScreen.classList.add('hidden');
+                    if (setupScreen) setupScreen.classList.remove('hidden');
+                });
+            }
+
+            if (gradingCamera) gradingCamera.addEventListener('change', handleGradingFilesInput);
+            if (gradingGallery) gradingGallery.addEventListener('change', handleGradingFilesInput);
+
+            if (btnSubmitGrading) btnSubmitGrading.addEventListener('click', submitGradingExecution);
+            if (btnGradingRetry) btnGradingRetry.addEventListener('click', submitGradingExecution);
+        }
+
+        // ===== 語音發音（安全防錯處理） =====
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+
+            try {
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = parseFloat(speechSpeedSelect ? speechSpeedSelect.value : 0.5) || 0.5;
+                utterance.lang = (currentLanguage === 'zh' ? 'zh-HK' : 'en-GB');
+                utterance.pitch = 1.0;
+
+                try {
+                    var voices = window.speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {
+                        var targetLang = utterance.lang;
+                        for (var i = 0; i < voices.length; i++) {
+                            var v = voices[i];
+                            if (v.lang === targetLang || (v.lang && v.lang.replace('_','-') === targetLang) || (v.lang && v.lang.indexOf(currentLanguage) === 0)) {
+                                utterance.voice = v;
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {}
+
+                setTimeout(function() {
+                    try { window.speechSynthesis.speak(utterance); } catch (e) {}
+                }, 50);
+            } catch (e) {}
+        }
+
+        if ('speechSynthesis' in window) {
+            try {
+                window.speechSynthesis.getVoices();
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = function() {
+                        try { window.speechSynthesis.getVoices(); } catch(e) {}
+                    };
+                }
+            } catch (e) {}
+        }
 
         // ===== 儲存機制 =====
         function loadSavedLists() {
@@ -456,12 +726,11 @@
             }
         }
         function saveListsToStorage(lists) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
-            } catch (e) {}
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(lists)); } catch (e) {}
         }
 
         function renderSavedLists() {
+            if (!savedListsContainer) return;
             var lists = loadSavedLists();
             if (lists.length === 0) {
                 savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
@@ -478,7 +747,7 @@
                     titleSpan.className = "text-xs font-medium text-slate-700 truncate flex-1 mr-2 cursor-pointer";
                     titleSpan.innerText = (item.lang === 'zh' ? '【中文】' : '【英文】') + ' ' + item.title;
                     titleSpan.addEventListener('click', function() {
-                        inputWords.value = item.content;
+                        if (inputWords) inputWords.value = item.content;
                         if (item.lang) setLanguage(item.lang);
                         showAlert("已成功載入：「" + item.title + "」");
                     });
@@ -502,98 +771,7 @@
             }
         }
 
-        btnSaveCurrent.addEventListener('click', function() {
-            var text = inputWords.value.trim();
-            if (!text) return showAlert("沒有內容可供儲存！");
-            var firstLine = text.split('\n')[0].trim();
-            var defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
-            var titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
-            if (!titleName) return;
-            var lists = loadSavedLists();
-            lists.unshift({ id: Date.now(), title: titleName.trim(), content: text, lang: currentLanguage });
-            if (lists.length > 20) lists.pop();
-            saveListsToStorage(lists);
-            renderSavedLists();
-            showAlert("「" + titleName + "」已成功儲存！");
-        });
-
-        // ===== 文本操作按鈕 =====
-        var isAllSelected = false;
-        btnSelectAll.addEventListener('click', function() {
-            inputWords.focus();
-            if (!isAllSelected) {
-                inputWords.select();
-                btnSelectAll.innerText = "取消全選";
-                isAllSelected = true;
-            } else {
-                inputWords.setSelectionRange(inputWords.value.length, inputWords.value.length);
-                btnSelectAll.innerText = "全選";
-                isAllSelected = false;
-            }
-        });
-
-        btnClearAll.addEventListener('click', function() {
-            if (inputWords.value.trim() === '') return;
-            if (confirm("確定要清除全部文字嗎？")) {
-                inputWords.value = '';
-                isAllSelected = false;
-                btnSelectAll.innerText = "全選";
-            }
-        });
-
-        // ===== 語音發音（安全防錯處理，支援 Android 8.0 至最新版） =====
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) return;
-            try {
-                window.speechSynthesis.cancel();
-            } catch (e) {}
-
-            try {
-                var utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
-
-                if (currentLanguage === 'zh') {
-                    utterance.lang = 'zh-HK';
-                    utterance.pitch = 1.0;
-                } else {
-                    utterance.lang = 'en-GB';
-                    utterance.pitch = 1.0;
-                }
-
-                try {
-                    var voices = window.speechSynthesis.getVoices();
-                    if (voices && voices.length > 0) {
-                        var targetLang = currentLanguage === 'zh' ? 'zh-HK' : 'en-GB';
-                        for (var i = 0; i < voices.length; i++) {
-                            var v = voices[i];
-                            if (v.lang === targetLang || (v.lang && v.lang.replace('_','-') === targetLang) || (v.lang && v.lang.indexOf(currentLanguage) === 0)) {
-                                utterance.voice = v;
-                                break;
-                            }
-                        }
-                    }
-                } catch (e) {}
-
-                setTimeout(function() {
-                    try {
-                        window.speechSynthesis.speak(utterance);
-                    } catch (e) {}
-                }, 50);
-            } catch (e) {}
-        }
-
-        if ('speechSynthesis' in window) {
-            try {
-                window.speechSynthesis.getVoices();
-                if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                    window.speechSynthesis.onvoiceschanged = function() {
-                        try { window.speechSynthesis.getVoices(); } catch(e) {}
-                    };
-                }
-            } catch (e) {}
-        }
-
-        // ===== 圖片智慧壓縮（Canvas Resizing to 1200px max） =====
+        // ===== 圖片壓縮與上傳 =====
         function compressImageFile(file, maxWidth, maxHeight, quality) {
             maxWidth = maxWidth || 1200;
             maxHeight = maxHeight || 1200;
@@ -647,10 +825,6 @@
             });
         }
 
-        // ===== 圖片上傳與裁切處理（支援多張） =====
-        cameraUpload.addEventListener('change', handleImageUpload);
-        galleryUpload.addEventListener('change', handleImageUpload);
-
         function handleImageUpload(e) {
             var files = e.target.files;
             if (!files || files.length === 0) return;
@@ -669,8 +843,8 @@
                 return;
             }
             var file = pendingFiles[currentFileIndex];
-            cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
-            cropModal.classList.remove('hidden');
+            if (cropModalTitle) cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
+            if (cropModal) cropModal.classList.remove('hidden');
 
             var reader = new FileReader();
             reader.onload = function(event) {
@@ -686,7 +860,7 @@
         }
 
         function drawCropCanvas() {
-            if (!currentImgObj || !ctxCrop) return;
+            if (!currentImgObj || !ctxCrop || !cropCanvas) return;
             cropCanvas.width = currentImgObj.width;
             cropCanvas.height = currentImgObj.height;
             ctxCrop.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
@@ -750,17 +924,6 @@
             cropCanvas.addEventListener('touchend', endDrag);
         }
 
-        btnConfirmCrop.addEventListener('click', function() {
-            cropModal.classList.add('hidden');
-            executeGeminiVision(false);
-        });
-
-        btnSkipCrop.addEventListener('click', function() {
-            cropModal.classList.add('hidden');
-            if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
-            executeGeminiVision(true);
-        });
-
         function classifyGeminiError(response, errorData) {
             if (!response) {
                 return { type: "network", title: "網路連線失敗", detail: "無法連線到伺服器。請檢查網絡是否正常。" };
@@ -773,7 +936,7 @@
                 return { type: "model_not_found", title: "模型不存在", detail: "無法找到指定的 Gemini 模型。" };
             }
             if (status === 429) {
-                return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度的速率限制。請稍候 1 分鐘後再試。" };
+                return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度的速率限制。" };
             }
             if (status >= 500) {
                 return { type: "server_error", title: "伺服器錯誤", detail: "Gemini 伺服器暫時無法回應。" };
@@ -782,28 +945,29 @@
         }
 
         function showOcrStatus(title, detail, showRetry) {
+            if (!ocrStatusContainer) return;
             ocrStatusContainer.classList.remove('hidden');
-            ocrStatusText.innerText = title;
-            if (detail) {
+            if (ocrStatusText) ocrStatusText.innerText = title;
+            if (detail && ocrStatusDetail) {
                 ocrStatusDetail.innerText = detail;
                 ocrStatusDetail.classList.remove('hidden');
-            } else {
+            } else if (ocrStatusDetail) {
                 ocrStatusDetail.innerText = "";
             }
+            var spin = ocrStatusContainer.querySelector('.animate-spin');
             if (showRetry) {
-                ocrRetryContainer.classList.remove('hidden');
-                var spin = ocrStatusContainer.querySelector('.animate-spin');
+                if (ocrRetryContainer) ocrRetryContainer.classList.remove('hidden');
                 if (spin) spin.classList.add('hidden');
             } else {
-                ocrRetryContainer.classList.add('hidden');
-                var spin = ocrStatusContainer.querySelector('.animate-spin');
+                if (ocrRetryContainer) ocrRetryContainer.classList.add('hidden');
                 if (spin) spin.classList.remove('hidden');
             }
         }
 
         function hideOcrStatus() {
+            if (!ocrStatusContainer) return;
             ocrStatusContainer.classList.add('hidden');
-            ocrRetryContainer.classList.add('hidden');
+            if (ocrRetryContainer) ocrRetryContainer.classList.add('hidden');
             var spin = ocrStatusContainer.querySelector('.animate-spin');
             if (spin) spin.classList.remove('hidden');
         }
@@ -861,24 +1025,6 @@
                 });
             }, 'image/jpeg', 0.8);
         }
-
-        btnOcrRetry.addEventListener('click', function() {
-            if (!lastOcrContext) return;
-            showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
-            callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
-                if (result.success) {
-                    accumulatedOCRTextResults.push(formatOCRResultText(result.text));
-                    hideOcrStatus();
-                    currentFileIndex++;
-                    processNextFileForCrop();
-                } else {
-                    showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
-                }
-            }).catch(function(err) {
-                var classified = classifyGeminiError(null, null);
-                showOcrStatus(classified.title, classified.detail, true);
-            });
-        });
 
         function callGeminiOCR(base64Data) {
             return new Promise(function(resolve, reject) {
@@ -1002,7 +1148,7 @@
         }
 
         function reindexAndAppendText(newTextString) {
-            var existingText = inputWords.value.trim();
+            var existingText = inputWords ? inputWords.value.trim() : "";
             var allLines = existingText ? existingText.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;}) : [];
             var newLines = newTextString.split('\n').map(function(l) { return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){return l;});
             allLines = allLines.concat(newLines);
@@ -1012,7 +1158,7 @@
                 finalArr.push((i + 1) + ". " + allLines[i]);
             }
 
-            inputWords.value = finalArr.join('\n');
+            if (inputWords) inputWords.value = finalArr.join('\n');
             hideOcrStatus();
             showAlert("Gemini 解析完成！已自動切換為「" + (currentLanguage === 'zh' ? '中文' : '英文') + "默書」模式，並加入 " + newLines.length + " 個段落。");
         }
@@ -1061,139 +1207,28 @@
             return queue;
         }
 
-        // ===== 默書流程控制 =====
-        btnStart.addEventListener('click', function() {
-            var rawText = inputWords.value.trim();
-            if (!rawText) return showAlert("請先輸入默書內容！");
-
-            originalWords = parseTextToQueue(rawText);
-            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
-
-            dictationQueue = originalWords.slice(0);
-            currentQueueIndex = 0;
-
-            setupScreen.classList.add('hidden');
-            dictationScreen.classList.remove('hidden');
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-
-            updateProgress();
-            setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
-        });
-
-        // ===== 首頁直接跳轉至 AI 批改頁 =====
-        btnGotoGrading.addEventListener('click', function() {
-            var rawText = inputWords.value.trim();
-            if (!rawText) return showAlert("請先在選字欄輸入或載入默書內容！");
-
-            originalWords = parseTextToQueue(rawText);
-            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
-
-            setupScreen.classList.add('hidden');
-            resultScreen.classList.remove('hidden');
-            resultSummary.innerText = "已載入 " + originalWords.length + " 個標準答案段落，請直接上傳手寫作業進行 AI 批改！";
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-            gradingQueueFiles = [];
-            renderGradingThumbnails();
-        });
-
         function updateProgress() {
+            if (!progressIndicator) return;
             progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
             
-            if (currentQueueIndex === 0) {
-                btnPrevSentence.classList.add('invisible');
-            } else {
-                btnPrevSentence.classList.remove('invisible');
+            if (btnPrevSentence) {
+                if (currentQueueIndex === 0) {
+                    btnPrevSentence.classList.add('invisible');
+                } else {
+                    btnPrevSentence.classList.remove('invisible');
+                }
             }
 
-            if (currentQueueIndex === dictationQueue.length - 1) {
-                fullReviewContainer.classList.remove('hidden');
-            } else {
-                fullReviewContainer.classList.add('hidden');
+            if (fullReviewContainer) {
+                if (currentQueueIndex === dictationQueue.length - 1) {
+                    fullReviewContainer.classList.remove('hidden');
+                } else {
+                    fullReviewContainer.classList.add('hidden');
+                }
             }
         }
 
-        btnPlayWord.addEventListener('click', function() {
-            if (dictationQueue[currentQueueIndex]) {
-                speakText(dictationQueue[currentQueueIndex]);
-            }
-        });
-
-        btnPrevSentence.addEventListener('click', function() {
-            if (currentQueueIndex > 0) {
-                currentQueueIndex--;
-                updateProgress();
-                setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
-            }
-        });
-
-        btnNextSentence.addEventListener('click', function() {
-            currentQueueIndex++;
-            if (currentQueueIndex < dictationQueue.length) {
-                updateProgress();
-                setTimeout(function() { speakText(dictationQueue[currentQueueIndex]); }, 300);
-            } else {
-                dictationScreen.classList.add('hidden');
-                resultScreen.classList.remove('hidden');
-                resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！";
-                gradingQueueFiles = [];
-                renderGradingThumbnails();
-            }
-        });
-
-        btnFullReview.addEventListener('click', function() {
-            if (!('speechSynthesis' in window)) return;
-            try {
-                window.speechSynthesis.cancel();
-            } catch (e) {}
-
-            var idx = 0;
-            var playNextInFull = function() {
-                if (idx < dictationQueue.length) {
-                    var utterance = new SpeechSynthesisUtterance(dictationQueue[idx]);
-                    utterance.rate = (parseFloat(speechSpeedSelect.value) || 0.5) * 1.2;
-                    if (currentLanguage === 'zh') {
-                        utterance.lang = 'zh-HK';
-                    } else {
-                        utterance.lang = 'en-GB';
-                    }
-                    utterance.onend = function() {
-                        idx++;
-                        setTimeout(playNextInFull, 600);
-                    };
-                    try {
-                        window.speechSynthesis.speak(utterance);
-                    } catch (e) {}
-                }
-            };
-            playNextInFull();
-        });
-
-        btnBackSetup.addEventListener('click', function() {
-            dictationScreen.classList.add('hidden');
-            setupScreen.classList.remove('hidden');
-        });
-
-        btnRetryAll.addEventListener('click', function() {
-            currentQueueIndex = 0;
-            resultScreen.classList.add('hidden');
-            dictationScreen.classList.remove('hidden');
-            gradingResultContainer.classList.add('hidden');
-            hideGradingStatus();
-            updateProgress();
-            setTimeout(function() { speakText(dictationQueue[0]); }, 300);
-        });
-
-        btnRestart.addEventListener('click', function() {
-            resultScreen.classList.add('hidden');
-            setupScreen.classList.remove('hidden');
-        });
-
-        // ===== AI 拍照紅筆批改（支援連續拍照與壓縮處理） =====
-        gradingCamera.addEventListener('change', handleGradingFilesInput);
-        gradingGallery.addEventListener('change', handleGradingFilesInput);
-
+        // ===== 批改相關函式 =====
         function handleGradingFilesInput(e) {
             var files = Array.prototype.slice.call(e.target.files);
             if (!files || files.length === 0) return;
@@ -1220,6 +1255,7 @@
         }
 
         function renderGradingThumbnails() {
+            if (!gradingPreviewContainer || !gradingThumbnails || !gradingPhotoCount) return;
             if (gradingQueueFiles.length === 0) {
                 gradingPreviewContainer.classList.add('hidden');
                 gradingThumbnails.innerHTML = '';
@@ -1255,11 +1291,11 @@
             }
         }
 
-        btnSubmitGrading.addEventListener('click', function() {
+        function submitGradingExecution() {
             if (gradingQueueFiles.length === 0) return showAlert("請先拍攝或上傳最少一張作業相片！");
 
             showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析 " + gradingQueueFiles.length + " 頁手寫字跡中，請稍候...", false);
-            gradingResultContainer.classList.add('hidden');
+            if (gradingResultContainer) gradingResultContainer.classList.add('hidden');
 
             var imagesPayload = [];
             for (var i = 0; i < gradingQueueFiles.length; i++) {
@@ -1272,9 +1308,9 @@
             callGeminiGradingMulti(imagesPayload).then(function(result) {
                 if (result.success) {
                     hideGradingStatus();
-                    gradingScore.innerText = result.data.scoreSummary || "批改完成";
-                    gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
-                    gradingResultContainer.classList.remove('hidden');
+                    if (gradingScore) gradingScore.innerText = result.data.scoreSummary || "批改完成";
+                    if (gradingDetails) gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
+                    if (gradingResultContainer) gradingResultContainer.classList.remove('hidden');
                     showAlert("AI 紅筆批改完成！");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
@@ -1283,58 +1319,31 @@
                 var classified = classifyGeminiError(null, null);
                 showGradingStatus(classified.title, classified.detail, true);
             });
-        });
-
-        btnGradingRetry.addEventListener('click', function() {
-            if (gradingQueueFiles.length === 0) return;
-            showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
-
-            var imagesPayload = [];
-            for (var i = 0; i < gradingQueueFiles.length; i++) {
-                imagesPayload.push({
-                    base64Data: gradingQueueFiles[i].base64Data,
-                    mimeType: gradingQueueFiles[i].mimeType
-                });
-            }
-
-            callGeminiGradingMulti(imagesPayload).then(function(result) {
-                if (result.success) {
-                    hideGradingStatus();
-                    gradingScore.innerText = result.data.scoreSummary || "批改完成";
-                    gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
-                    gradingResultContainer.classList.remove('hidden');
-                    showAlert("AI 紅筆批改完成！");
-                } else {
-                    showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
-                }
-            }).catch(function(err) {
-                var classified = classifyGeminiError(null, null);
-                showGradingStatus(classified.title, classified.detail, true);
-            });
-        });
+        }
 
         function showGradingStatus(title, detail, showRetry) {
+            if (!gradingStatusContainer) return;
             gradingStatusContainer.classList.remove('hidden');
-            gradingStatusText.innerText = title;
-            if (detail) {
+            if (gradingStatusText) gradingStatusText.innerText = title;
+            if (detail && gradingStatusDetail) {
                 gradingStatusDetail.innerText = detail;
-            } else {
+            } else if (gradingStatusDetail) {
                 gradingStatusDetail.innerText = "";
             }
+            var spin = gradingStatusContainer.querySelector('.animate-spin');
             if (showRetry) {
-                gradingRetryContainer.classList.remove('hidden');
-                var spin = gradingStatusContainer.querySelector('.animate-spin');
+                if (gradingRetryContainer) gradingRetryContainer.classList.remove('hidden');
                 if (spin) spin.classList.add('hidden');
             } else {
-                gradingRetryContainer.classList.add('hidden');
-                var spin = gradingStatusContainer.querySelector('.animate-spin');
+                if (gradingRetryContainer) gradingRetryContainer.classList.add('hidden');
                 if (spin) spin.classList.remove('hidden');
             }
         }
 
         function hideGradingStatus() {
+            if (!gradingStatusContainer) return;
             gradingStatusContainer.classList.add('hidden');
-            gradingRetryContainer.classList.add('hidden');
+            if (gradingRetryContainer) gradingRetryContainer.classList.add('hidden');
             var spin = gradingStatusContainer.querySelector('.animate-spin');
             if (spin) spin.classList.remove('hidden');
         }
