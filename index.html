@@ -273,7 +273,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">AI 正在批改中...</span>
+                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">AI 正在逐字精準批改中...</span>
                     </div>
                     <p id="grading-status-detail" class="text-[10px] text-indigo-600 ml-6 leading-relaxed"></p>
                     <div id="grading-retry-container" class="hidden ml-6 mt-2">
@@ -345,7 +345,7 @@
             });
         }
 
-        // ===== 核心設定 (修正 API 模型與連線陣列) =====
+        // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
         const STORAGE_KEY = 'my_dictation_saved_lists_v11_05';
@@ -418,7 +418,7 @@
         let originalWords = [];
         let dictationQueue = [];
         let currentQueueIndex = 0;
-        let selectedLanguageOverride = null; // 'zh' or 'en' or null
+        let selectedLanguageOverride = null;
 
         let pendingFiles = [];
         let currentFileIndex = 0;
@@ -452,7 +452,6 @@
             checkInputLanguageAndSegment();
         });
 
-        // ===== 根據文字內容與切換狀態更新介面 =====
         inputWords.addEventListener('input', () => {
             checkInputLanguageAndSegment();
         });
@@ -484,7 +483,6 @@
                 dynamicModeIndicator.className = 'text-xs bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-xl flex items-center justify-between';
             }
 
-            // 檢查是否顯示「中文標點智慧分句」
             const hasChinese = /[\u4e00-\u9fa5]/.test(text);
             if (hasChinese && (text.length > 15 || /[，、。！？；]/.test(text))) {
                 segmentToolbar.classList.remove('hidden');
@@ -492,7 +490,6 @@
                 segmentToolbar.classList.add('hidden');
             }
 
-            // 選字欄有內容時顯示快捷直接批改按鈕
             if (text.length > 0) {
                 directGradingContainer.classList.remove('opacity-50', 'pointer-events-none');
             } else {
@@ -500,7 +497,6 @@
             }
         }
 
-        // 首頁直接跳轉 AI 批改頁
         btnDirectGrading.addEventListener('click', () => {
             const rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先在選字欄中輸入或選擇默書內容！");
@@ -518,7 +514,6 @@
             showAlert("已將選字欄內容設為標準答案，請直接拍攝或上傳學童手寫作業！");
         });
 
-        // 智慧標點分句執行
         btnAutoSegment.addEventListener('click', () => {
             let text = inputWords.value.trim();
             if (!text) return;
@@ -548,7 +543,6 @@
             showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
         });
 
-        // ===== 通用對話框 =====
         function showAlert(msg) {
             modalMessage.innerText = msg;
             customModal.classList.remove('hidden');
@@ -558,7 +552,6 @@
             if (e.target === customModal) customModal.classList.add('hidden');
         });
 
-        // ===== 儲存機制 =====
         function loadSavedLists() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
@@ -637,7 +630,6 @@
             showAlert("「" + titleName + "」已成功儲存！");
         });
 
-        // ===== 文本操作按鈕 =====
         let isAllSelected = false;
         btnSelectAll.addEventListener('click', () => {
             inputWords.focus();
@@ -663,7 +655,6 @@
             }
         });
 
-        // ===== 智能語音發音核心 (自動根據中英文切換發音) =====
         function speakText(text, overrideSpeed) {
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
@@ -675,9 +666,9 @@
             const hasChinese = /[\u4e00-\u9fa5]/.test(text);
 
             if (selectedLanguageOverride === 'zh' || (selectedLanguageOverride !== 'en' && hasChinese)) {
-                utterance.lang = 'zh-HK'; // 繁體中文香港粵語核心
+                utterance.lang = 'zh-HK';
             } else {
-                utterance.lang = 'en-GB'; // 英文核心
+                utterance.lang = 'en-GB';
             }
 
             const voices = window.speechSynthesis.getVoices();
@@ -693,7 +684,6 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
-        // ===== 圖片上傳與裁切處理 =====
         cameraUpload.addEventListener('change', handleImageUpload);
         galleryUpload.addEventListener('change', handleImageUpload);
 
@@ -805,7 +795,6 @@
             executeGeminiVision(true);
         });
 
-        // ===== 錯誤分類 =====
         function classifyGeminiError(response, errorData) {
             if (!response) {
                 return { type: "network", title: "網路連線失敗", detail: "無法連線到伺服器。" };
@@ -893,7 +882,6 @@
             }
         });
 
-        // 升級：強效過濾 Prompt
         async function callGeminiOCR(base64Data) {
             const systemPrompt = `You are an expert bilingual teacher (English & Chinese Cantonese) for primary students in Hong Kong.
 Extract dictation words, vocabulary, or sentences from the image carefully.
@@ -1020,7 +1008,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // ===== AI 批改功能 =====
+        // ===== AI 批改功能（強化逐字精準度） =====
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -1041,7 +1029,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("AI 正在批改手寫默書作業...", "步驟 1/2：分析中英文手寫字跡並與標準答案比對中...", false);
+            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -1055,7 +1043,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
                     gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
                     gradingResultContainer.classList.remove('hidden');
-                    showAlert("AI 紅筆批改完成！");
+                    showAlert("AI 紅筆批改完成！已精準標出錯別字與漏字。");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
@@ -1067,7 +1055,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
 
         btnGradingRetry.addEventListener('click', async () => {
             if (!lastGradingContext) return;
-            showGradingStatus("正在重試批改...", "重新傳送圖片進行批改", false);
+            showGradingStatus("正在重試批改...", "重新傳送圖片進行精準批改", false);
             try {
                 const result = await callGeminiGrading(lastGradingContext.base64Data, lastGradingContext.mimeType);
                 if (result.success) {
@@ -1085,30 +1073,36 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
+        // 重點強化：超級精準逐字比對 Prompt
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are a strict but fair bilingual primary school teacher in Hong Kong.
-STANDARD ANSWERS (correct dictation items):
+            const systemPrompt = `You are a strict, meticulous primary school teacher in Hong Kong grading handwritten dictation work.
+
+STANDARD ANSWERS (Standard sentences):
 ${standardAnswersJSON}
 
-YOUR TASK:
-1. Look at the student's handwritten dictation paper in the photo (supports Chinese characters and English).
-2. Compare each item against standard answers. Identify typos, wrong Chinese characters (錯別字), wrong English words, missing words/characters (漏字), and punctuation errors.
-3. COLOR HIGHLIGHTING RULES (VERY IMPORTANT):
-   - **RED COLOR (#e11d48 / text-rose-600)**: Highlight all WRONG characters, TYPOS, MISTAKES, and EXTRA incorrect words.
-     Example: <span class="text-rose-600 line-through font-bold">錯字/Mistake</span> (Followed by standard answer or correction in parentheses).
-   - **GREEN COLOR (#16a34a / text-emerald-600)**: Highlight all MISSING characters/words (漏字) and correct insertions.
-     Example: <span class="text-emerald-600 font-bold">[漏字: 補上正字]</span> or <span class="text-emerald-600 font-bold">[Missing: word]</span>.
-4. Return a STRICTLY VALID JSON object with exact keys:
-   - "scoreSummary": string like "8/10 正確" or "62 分 — 有 3 個錯字，2 個漏字"
-   - "htmlDetails": string of HTML. For each sentence:
-     Show standard answer in bold dark slate, then student's handwritten version analysis.
-     Wrap all wrong characters/words in: <span class="text-rose-600 line-through font-bold">wrong_text</span>
-     Wrap all missing characters/words in: <span class="text-emerald-600 font-bold">[漏字: missing_text]</span>
-     Use <div class="mb-2 pb-2 border-b border-slate-100"> around each sentence's analysis.
-     Use <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div> for the label.
-Return ONLY valid JSON. No markdown, no extra text.`;
+INSTRUCTIONS FOR HIGH-ACCURACY GRADING:
+1. **Transcribe Student's Handwriting**: Carefully transcribe what the student actually wrote for each sentence in the photo character-by-character (or word-by-word for English).
+2. **Strict Character-by-Character Comparison**: Compare the student's transcription against the standard answer.
+3. **DO NOT SKIP ERRORS**:
+   - If a character is wrong, miswritten, replaced, or misspelled, mark it as a **WRONG CHARACTER** in RED.
+   - If a character or word is missing, blank, or skipped, mark it as a **MISSING CHARACTER** in GREEN.
+4. **STRICT COLOR FORMATTING**:
+   - **RED COLOR (Mistakes / 錯字)**:
+     Wrap all wrong characters/words in: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正)</span>
+   - **GREEN COLOR (Missing / 漏字)**:
+     Wrap all missing characters/words in: <span class="text-emerald-600 font-bold">[漏字: 補]</span>
+5. **JSON OUTPUT FORMAT**:
+   Return ONLY a valid JSON object with:
+   - "scoreSummary": e.g., "75 分 — 發現 3 個錯字、2 個漏字"
+   - "htmlDetails": HTML string. For each item:
+     - Display: <div class="mb-2 pb-2 border-b border-slate-100">
+     - Sentence number: <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
+     - Standard Answer: <div class="font-bold text-slate-800">標準答案：...</div>
+     - Student Answer Analysis: <div class="mt-1 text-slate-600">學生寫成：[Full sentence with RED for mistakes and GREEN for missing words]</div>
+     - </div>
+Return ONLY valid JSON. No markdown backticks, no code blocks.`;
 
             let lastError = null;
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -1120,11 +1114,11 @@ Return ONLY valid JSON. No markdown, no extra text.`;
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Grade student's handwritten dictation paper. Highlight ALL WRONG WORDS IN RED and ALL MISSING WORDS IN GREEN. Return valid JSON only." },
+                            { text: "Perform rigorous character-by-character dictation grading on this photo. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
@@ -1190,7 +1184,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
                 activeLangBadge.className = "text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-md";
             }
 
-            // 如果已經是最後一句，按鈕顯示完成，並顯示 1.2x 全文快速複查
             if (currentQueueIndex === dictationQueue.length - 1) {
                 btnNextText.innerText = "完成默書";
                 btnFastReview.classList.remove('hidden');
@@ -1199,7 +1192,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
                 btnFastReview.classList.add('hidden');
             }
 
-            // 第一題時停用「上一題」按鈕
             if (currentQueueIndex === 0) {
                 btnPrevSentence.classList.add('opacity-50', 'pointer-events-none');
             } else {
@@ -1216,7 +1208,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             playCurrentItem();
         });
 
-        // 播上一題
         btnPrevSentence.addEventListener('click', () => {
             if (currentQueueIndex > 0) {
                 currentQueueIndex--;
@@ -1225,7 +1216,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             }
         });
 
-        // 播下一題
         btnNextSentence.addEventListener('click', () => {
             currentQueueIndex++;
             if (currentQueueIndex < dictationQueue.length) {
@@ -1238,7 +1228,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             }
         });
 
-        // ⚡ 1.2x 全文快速複查
         btnFastReview.addEventListener('click', () => {
             const fullText = dictationQueue.join('。 ');
             showAlert("⚡ 正以 1.2x 速度連貫朗讀全文，請學童檢查默寫本！");
