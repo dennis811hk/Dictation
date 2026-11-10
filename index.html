@@ -722,7 +722,177 @@
             currentFileIndex = 0;
             accumulatedOCRTextResults = [];
             e.target.value = '';
-            processNextFileForCrop();
+            
+            // Android 8 專用：直接略過複雜裁切彈窗，點選後立即依序全螢幕辨識，確保 100% 成功寫入文字框
+            showOcrStatus("正在分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片文字...", false);
+            processNextFileDirectOCR();
+        }
+
+        function processNextFileDirectOCR() {
+            if (currentFileIndex >= pendingFiles.length) {
+                hideOcrStatus();
+                if (accumulatedOCRTextResults.length > 0) {
+                    var combinedText = accumulatedOCRTextResults.join('\n');
+                    reindexAndAppendText(combinedText);
+                } else {
+                    showAlert("未能從相片中辨識出文字，請確保相片清晰。");
+                }
+                return;
+            }
+
+            var file = pendingFiles[currentFileIndex];
+            showOcrStatus("正在分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張...", false);
+
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                var base64Full = event.target.result;
+                var base64Data = base64Full.indexOf(',') !== -1 ? base64Full.split(',')[1] : base64Full;
+                var mimeType = file.type || "image/jpeg";
+
+                lastOcrContext = { base64Data: base64Data, mimeType: mimeType };
+
+                callGeminiOCRData(base64Data, mimeType).then(function(result) {
+                    if (result.success) {
+                        accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                        currentFileIndex++;
+                        processNextFileDirectOCR();
+                    } else {
+                        showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
+                    }
+                }).catch(function(err) {
+                    showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
+                });
+            };
+            reader.onerror = function() {
+                currentFileIndex++;
+                processNextFileDirectOCR();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function formatOCRResultText(text) {
+            var lines = text.split('\n');
+            var cleaned = [];
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (line) {
+                    cleaned.push(line.replace(/^\d+[\.\)]\s*/, ''));
+                }
+            }
+            return cleaned.join('\n');
+        }
+
+        btnOcrRetry.addEventListener('click', function() {
+            if (!lastOcrContext) return;
+            showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
+            callGeminiOCRData(lastOcrContext.base64Data, lastOcrContext.mimeType).then(function(result) {
+                if (result.success) {
+                    accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                    hideOcrStatus();
+                    currentFileIndex++;
+                    processNextFileDirectOCR();
+                } else {
+                    showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
+                }
+            }).catch(function(err) {
+                showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
+            });
+        });
+
+        function callGeminiOCRData(base64Data, mimeType) {
+            return new Promise(function(resolve, reject) {
+                var systemPrompt = currentLanguage === 'zh' ?
+                    "You are an expert Chinese teacher in Hong Kong. Extract clean dictation sentences or vocabulary from the image. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...)." :
+                    "You are an expert English teacher in Hong Kong. Extract clean dictation sentences from the image. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...).";
+
+                var maxAttempts = 3;
+                var tryModel = function(mi, attemptCount) {
+                    if (mi >= GEMINI_MODELS.length) {
+                        resolve({ success: false, error: { title: "伺服器忙碌", detail: "伺服器暫時繁忙 (503/429)，請點擊重試按鈕。" } });
+                        return;
+                    }
+                    var model = GEMINI_MODELS[mi];
+                    var apiUrl = "/api/chat";
+
+                    var body = JSON.stringify({
+                        model: model,
+                        contents: [{
+                            role: "user",
+                            parts: [
+                                { text: "Extract and format the dictation list from this image." },
+                                { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
+                            ]
+                        }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    });
+
+                    fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: body
+                    }).then(function(response) {
+                        if (response.ok) {
+                            response.json().then(function(apiResult) {
+                                var candidate = apiResult.candidates && apiResult.candidates[0];
+                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                    var aiText = candidate.content.parts[0].text.trim();
+                                    aiText = aiText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                                    if (aiText) {
+                                        resolve({ success: true, text: aiText });
+                                        return;
+                                    }
+                                }
+                                resolve({ success: false, error: { title: "空白回應", detail: "未能識別文字。" } });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: { title: "解析錯誤", detail: "格式錯誤。" } });
+                            });
+                        } else {
+                            if ((response.status === 503 || response.status === 429) && attemptCount < maxAttempts) {
+                                setTimeout(function() {
+                                    tryModel(mi, attemptCount + 1);
+                                }, 1500 * (attemptCount + 1));
+                                return;
+                            }
+                            if (response.status === 503 || response.status === 429 || response.status === 404) {
+                                tryModel(mi + 1, 0);
+                                return;
+                            }
+                            resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
+                        }
+                    }).catch(function(err) {
+                        if (attemptCount < maxAttempts) {
+                            setTimeout(function() {
+                                tryModel(mi, attemptCount + 1);
+                            }, 1500);
+                        } else {
+                            tryModel(mi + 1, 0);
+                        }
+                    });
+                };
+                tryModel(0, 0);
+            });
+        }
+
+        function reindexAndAppendText(newTextString) {
+            var existingText = inputWords.value.trim();
+            var allLines = existingText ? existingText.split('\n') : [];
+            var newLines = newTextString.split('\n');
+
+            var combined = allLines.concat(newLines);
+            var cleanList = [];
+            for (var i = 0; i < combined.length; i++) {
+                var line = combined[i].replace(/^\d+[\.\)]\s*/, '').trim();
+                if (line) cleanList.push(line);
+            }
+
+            var formatted = [];
+            for (var j = 0; j < cleanList.length; j++) {
+                formatted.push((j + 1) + ". " + cleanList[j]);
+            }
+
+            inputWords.value = formatted.join('\n');
+            hideOcrStatus();
+            showAlert("Gemini 識別成功！已順利載入 " + cleanList.length + " 個句子到選字欄中。");
         }
 
         function handleGradingFilesInput(e) {
