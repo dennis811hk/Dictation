@@ -4,14 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - Gemini 3.5版</title>
+    <title>自動默書小幫手 - 雙語智能版</title>
     
-    <!-- PWA 必要：載入 Manifest 檔案 -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://miaoda.feishu.cn">
     <link href="https://miaoda.feishu.cn/fonts/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,8 +13,6 @@
         body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        .pulse-dot { animation: pulse 1.4s ease-in-out infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col items-center justify-start p-4">
@@ -34,7 +26,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Gemini 3.5 尊享版</span>
+        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">中英雙語智慧版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -42,9 +34,18 @@
 
         <!-- 畫面 1：準備默書 -->
         <div id="setup-screen" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
-            <h2 class="text-lg font-bold text-slate-800">準備默書</h2>
             <div class="flex items-center justify-between">
-                <p class="text-sm text-slate-500">請在下方貼上英文詞彙或句子，每行一個或用換行分隔。</p>
+                <h2 class="text-lg font-bold text-slate-800">準備默書</h2>
+                <!-- 語言手動切換開關 -->
+                <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                    <button type="button" id="mode-auto" class="px-3 py-1 rounded-lg bg-white text-blue-600 shadow-2xs transition">自動辨識</button>
+                    <button type="button" id="mode-cantonese" class="px-3 py-1 rounded-lg text-slate-600 transition">中文粵語</button>
+                    <button type="button" id="mode-english" class="px-3 py-1 rounded-lg text-slate-600 transition">英文</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-slate-500">請貼上英文或中文詞語/句子，或拍照自動識別。</p>
                 <div class="flex space-x-1.5">
                     <button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -52,8 +53,8 @@
             </div>
 
             <div class="relative">
-                <textarea id="input-words" rows="6" class="w-full p-3.5 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm leading-relaxed" placeholder="1. The children are playing Frisbee.
-2. They play tug of war, and hide-and-seek."></textarea>
+                <textarea id="input-words" rows="6" class="w-full p-3.5 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm leading-relaxed" placeholder="1. 太陽從東邊升起。
+2. The children are playing Frisbee."></textarea>
             </div>
 
             <!-- Gemini 視覺載入進度提示框 -->
@@ -137,11 +138,20 @@
         <!-- 畫面 2：默書進行中 -->
         <div id="dictation-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-6">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 題 / 共 5 題</span>
+                <div class="flex items-center space-x-2">
+                    <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 題 / 共 5 題</span>
+                    <span id="active-lang-badge" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md">粵語/中文</span>
+                </div>
                 <button id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
-            <div class="flex flex-col items-center justify-center py-6 space-y-3">
+            <!-- 當前播放內容預覽提示 -->
+            <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center">
+                <p class="text-xs text-slate-400 mb-1">正在播放語音題目：</p>
+                <p id="current-word-display" class="text-base font-bold text-slate-800 tracking-wide"></p>
+            </div>
+
+            <div class="flex flex-col items-center justify-center py-2 space-y-3">
                 <button id="btn-play-word" class="w-24 h-24 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center transition shadow-inner">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -262,25 +272,23 @@
     </div>
 
     <script>
-        // ===== PWA 自動註冊 Service Worker =====
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => { console.log('Service Worker 註冊成功:', reg.scope); })
-                    .catch((err) => { console.log('Service Worker 註冊失敗:', err); });
-            });
-        }
-
         // ===== 核心設定 =====
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v4';
+        const STORAGE_KEY = 'my_dictation_saved_lists_bilingual_v1';
+
+        // 語系模式: 'auto', 'cantonese', 'english'
+        let currentLanguageMode = 'auto';
 
         // ===== DOM 元素綁定 =====
         const setupScreen = document.getElementById('setup-screen');
         const dictationScreen = document.getElementById('dictation-screen');
         const resultScreen = document.getElementById('result-screen');
         const inputWords = document.getElementById('input-words');
+
+        const modeAutoBtn = document.getElementById('mode-auto');
+        const modeCantoneseBtn = document.getElementById('mode-cantonese');
+        const modeEnglishBtn = document.getElementById('mode-english');
 
         const btnStart = document.getElementById('btn-start');
         const cameraUpload = document.getElementById('camera-upload');
@@ -295,7 +303,6 @@
         const btnSelectAll = document.getElementById('btn-select-all');
         const btnClearAll = document.getElementById('btn-clear-all');
         const gradingUpload = document.getElementById('grading-upload');
-        const gradingUploadBtn = document.getElementById('grading-upload-btn');
         const gradingStatusContainer = document.getElementById('grading-status-container');
         const gradingStatusText = document.getElementById('grading-status-text');
         const gradingStatusDetail = document.getElementById('grading-status-detail');
@@ -306,6 +313,8 @@
         const gradingDetails = document.getElementById('grading-details');
 
         const progressIndicator = document.getElementById('progress-indicator');
+        const activeLangBadge = document.getElementById('active-lang-badge');
+        const currentWordDisplay = document.getElementById('current-word-display');
         const btnPlayWord = document.getElementById('btn-play-word');
         const btnNextSentence = document.getElementById('btn-next-sentence');
         const btnBackSetup = document.getElementById('btn-back-setup');
@@ -345,7 +354,27 @@
         // ===== 初始化 =====
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
+            initModeButtons();
         });
+
+        function initModeButtons() {
+            const updateModeUI = () => {
+                [modeAutoBtn, modeCantoneseBtn, modeEnglishBtn].forEach(b => {
+                    b.className = "px-3 py-1 rounded-lg text-slate-600 transition";
+                });
+                if (currentLanguageMode === 'auto') {
+                    modeAutoBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-600 shadow-2xs transition font-semibold";
+                } else if (currentLanguageMode === 'cantonese') {
+                    modeCantoneseBtn.className = "px-3 py-1 rounded-lg bg-white text-purple-600 shadow-2xs transition font-semibold";
+                } else {
+                    modeEnglishBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-600 shadow-2xs transition font-semibold";
+                }
+            };
+
+            modeAutoBtn.addEventListener('click', () => { currentLanguageMode = 'auto'; updateModeUI(); });
+            modeCantoneseBtn.addEventListener('click', () => { currentLanguageMode = 'cantonese'; updateModeUI(); });
+            modeEnglishBtn.addEventListener('click', () => { currentLanguageMode = 'english'; updateModeUI(); });
+        }
 
         // ===== 通用對話框 =====
         function showAlert(msg) {
@@ -446,14 +475,42 @@
             }
         });
 
-        // ===== 語音發音 =====
-        function speakText(text) {
+        // ===== 智能語音發音 (支援繁體中文粵語 / 國語 / 英文) =====
+        function speakText(text, isCantoneseForce = false) {
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-GB';
-            utterance.rate = parseFloat(speechSpeedSelect.value) || 0.5;
+            const rate = parseFloat(speechSpeedSelect.value) || 0.5;
+            utterance.rate = rate;
+
+            // 判斷是否為中文
+            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+
+            if (isCantoneseForce || hasChinese) {
+                utterance.lang = 'zh-HK'; // 繁體中文香港粵語
+            } else {
+                utterance.lang = 'en-GB'; // 英文
+            }
+
+            // 嘗試選取香港粵語或廣東話語音包
+            const voices = window.speechSynthesis.getVoices();
+            if (hasChinese || isCantoneseForce) {
+                const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
+                if (hkVoice) {
+                    utterance.voice = hkVoice;
+                } else {
+                    const twOrCnVoice = voices.find(v => v.lang.startsWith('zh'));
+                    if (twOrCnVoice) utterance.voice = twOrCnVoice;
+                }
+            }
+
             window.speechSynthesis.speak(utterance);
+        }
+
+        // 預先載入語音清單
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
         // ===== 圖片上傳與裁切處理 =====
@@ -565,7 +622,7 @@
         btnSkipCrop.addEventListener('click', () => {
             cropModal.classList.add('hidden');
             if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
-            executeGeminiVision(true);
+            executeGeminingVision(true);
         });
 
         // ===== 通用：Gemini API 錯誤分類 =====
@@ -591,7 +648,7 @@
                 return {
                     type: "model_not_found",
                     title: "模型不存在",
-                    detail: "無法找到指定的 Gemini 模型。已自動嘗試備用模型，若仍失敗請稍後再試。"
+                    detail: "無法找到指定的 Gemini 模型。"
                 };
             }
             if (status === 429) {
@@ -605,7 +662,7 @@
                 return {
                     type: "server_error",
                     title: "伺服器錯誤",
-                    detail: "Gemini / Vercel 伺服器暫時無法回應（" + status + "）。請稍候再試。"
+                    detail: "Gemini 伺服器暫時無法回應（" + status + "）。請稍候再試。"
                 };
             }
             return {
@@ -615,7 +672,7 @@
             };
         }
 
-        // ===== Gemini Vision OCR =====
+        // ===== Gemini Vision OCR (支援中文字幕及自動切換粵語) =====
         function showOcrStatus(title, detail, showRetry) {
             ocrStatusContainer.classList.remove('hidden');
             ocrStatusText.innerText = title;
@@ -658,7 +715,7 @@
             targetCanvas.height = sh;
             tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, sw, sh);
 
-            showOcrStatus("正在分析圖片中...", "步驟 1/2：圖片辨識進行中，請稍候...", false);
+            showOcrStatus("正在分析中英文字體...", "步驟 1/2：智能辨識課本內容中，支援繁體中文與英文...", false);
 
             targetCanvas.toBlob(async (blob) => {
                 try {
@@ -705,12 +762,13 @@
         });
 
         async function callGeminiOCR(base64Data) {
-            const systemPrompt = `You are an expert English teacher for primary students in Hong Kong.
-Extract dictation sentences from the image carefully.
+            const systemPrompt = `You are an expert bilingual teacher (English & Chinese Cantonese) for primary students in Hong Kong.
+Extract dictation words, vocabulary, or sentences from the image carefully.
 CRITICAL INSTRUCTIONS:
-1. For multi-column layouts (e.g. left column 1-8, right column 9-15), read down the left column first, then the right column.
-2. Fix all typos, broken words, hyphenations, and punctuation.
-3. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.`;
+1. Support BOTH English dictation and Chinese/Cantonese dictation (中文默書 / 英文默書).
+2. For multi-column layouts, read down the left column first, then the right column.
+3. Fix all typos, broken words, or punctuation.
+4. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one item per line. No extra commentary, no markdown code blocks.`;
 
             let lastError = null;
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -722,7 +780,7 @@ CRITICAL INSTRUCTIONS:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract and format exactly the list of dictation sentences from this image." },
+                            { text: "Extract and format exactly the list of dictation items (English or Chinese/Cantonese) from this image." },
                             { inlineData: { mimeType: "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -754,7 +812,7 @@ CRITICAL INSTRUCTIONS:
                                 error: {
                                     type: "safety",
                                     title: "內容遭安全過濾",
-                                    detail: "圖片內容觸發了 Gemini 的安全機制（原因：" + finishReason + "）。請更換清晰的課本照片再試。"
+                                    detail: "圖片內容觸發了 Gemini 的安全機制（原因：" + finishReason + "）。"
                                 }
                             };
                         }
@@ -763,7 +821,7 @@ CRITICAL INSTRUCTIONS:
                             error: {
                                 type: "empty_response",
                                 title: "API 回傳空白",
-                                detail: "Gemini 未能辨識出圖片中的文字。請確認圖片是否清晰、光線充足。"
+                                detail: "Gemini 未能辨識出圖片中的文字。請確認圖片是否清晰。"
                             }
                         };
                     } else {
@@ -811,13 +869,12 @@ CRITICAL INSTRUCTIONS:
             });
             let uniqueMap = new Map();
             items.forEach(item => {
-                let norm = item.content.toLowerCase().replace(/[^a-z]/g, '');
-                if (norm.length > 3) uniqueMap.set(norm, item.content);
+                let norm = item.content.toLowerCase().replace(/[\s\p{P}]/gu, '');
+                if (norm.length > 1) uniqueMap.set(norm, item.content);
             });
             return Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
         }
 
-        // ===== Base64 工具 =====
         function blobToBase64(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -844,16 +901,16 @@ CRITICAL INSTRUCTIONS:
 
             let uniqueMap = new Map();
             allSentences.forEach(s => {
-                let key = s.toLowerCase().replace(/[^a-z]/g, '');
-                if (key.length > 3) uniqueMap.set(key, s);
+                let key = s.toLowerCase().replace(/[\s\p{P}]/gu, '');
+                if (key.length > 1) uniqueMap.set(key, s);
             });
 
             inputWords.value = Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
-            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個句子。");
+            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個項目。");
         }
 
-        // ===== AI 批改功能 =====
+        // ===== AI 批改功能 (中英雙語支援) =====
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -887,7 +944,7 @@ CRITICAL INSTRUCTIONS:
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            showGradingStatus("AI 正在批改手寫默書...", "步驟 1/2：分析手寫字跡並與標準答案比對中，大約 10-20 秒", false);
+            showGradingStatus("AI 正在批改手寫默書作業...", "步驟 1/2：分析中英文手寫字跡並與標準答案比對中...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -935,29 +992,26 @@ CRITICAL INSTRUCTIONS:
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are a strict but fair primary school English teacher in Hong Kong.
+            const systemPrompt = `You are a strict but fair bilingual primary school teacher in Hong Kong.
 
-STANDARD ANSWERS (the correct dictation sentences):
+STANDARD ANSWERS (correct dictation items in Chinese or English):
 ${standardAnswersJSON}
 
 YOUR TASK:
-1. Look at the student's handwritten dictation in the photo.
-2. Compare each sentence the student wrote against the corresponding standard answer.
-3. For each sentence, identify: spelling mistakes, missing words, extra words, wrong words, and punctuation errors.
+1. Look at the student's handwritten dictation paper in the photo (supports Chinese characters and English).
+2. Compare each item the student wrote against the corresponding standard answer.
+3. Identify typos, wrong Chinese characters (錯別字), missing characters or words, extra items, punctuation errors.
 4. Return a STRICTLY VALID JSON object with these exact keys:
-   - "scoreSummary": a short string like "8/10 正確" or "62 分 — 有 3 個拼字錯誤"
-   - "htmlDetails": a string of HTML. For each sentence, show the correct answer in bold, then the student's version.
-     Wrap mistakes in: <span class="text-rose-600 line-through font-medium">wrong_word</span>
-     Wrap corrections in: <span class="text-emerald-600 font-bold">correct_word</span>
-     Wrap missing words in: <span class="text-amber-600 font-bold">[遺漏: word]</span>
+   - "scoreSummary": a short string like "8/10 正確" or "62 分 — 有 3 個錯別字"
+   - "htmlDetails": a string of HTML. For each sentence, show standard answer in bold, then the student's version.
+     Wrap mistakes in: <span class="text-rose-600 line-through font-medium">wrong_text</span>
+     Wrap corrections in: <span class="text-emerald-600 font-bold">correct_text</span>
      Use <div class="mb-2 pb-2 border-b border-slate-100"> around each sentence's analysis.
      Use <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div> for the label.
 
 CRITICAL RULES:
 - Return ONLY valid JSON. No markdown, no code blocks, no extra text before or after.
-- Make sure all HTML in htmlDetails is properly escaped for JSON (use \n for newlines, escape quotes).
-- If you cannot read the handwriting clearly for a sentence, say so in the HTML for that sentence.
-- Match sentences by order: first student sentence = first standard answer, etc.`;
+- Ensure all HTML in htmlDetails is properly escaped for JSON.`;
 
             let lastError = null;
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -969,7 +1023,7 @@ CRITICAL RULES:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Grade the student's handwritten dictation paper in the photo. Compare with the standard answers. Return valid JSON only." },
+                            { text: "Grade the student's handwritten dictation paper in the photo (Chinese/English). Compare with standard answers. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -999,7 +1053,6 @@ CRITICAL RULES:
                             try {
                                 parsed = JSON.parse(textResp);
                             } catch (parseErr) {
-                                console.warn("JSON 解析失敗，嘗試備用方法...", textResp.substring(0, 200));
                                 const match = textResp.match(/\{[\s\S]*\}/);
                                 if (match) {
                                     try {
@@ -1009,7 +1062,7 @@ CRITICAL RULES:
                                             success: true,
                                             data: {
                                                 scoreSummary: "批改完成",
-                                                htmlDetails: "<p class='text-rose-600'>⚠ AI 回傳格式無法解析，以下是原始回應：</p><pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
+                                                htmlDetails: "<p class='text-rose-600'>⚠ AI 回傳格式無法解析：</p><pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
                                             }
                                         };
                                     }
@@ -1018,7 +1071,7 @@ CRITICAL RULES:
                                         success: true,
                                         data: {
                                             scoreSummary: "批改完成",
-                                            htmlDetails: "<p class='text-rose-600'>⚠ AI 回傳格式無法解析，以下是原始回應：</p><pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
+                                            htmlDetails: "<p class='text-rose-600'>⚠ AI 回傳格式無法解析：</p><pre class='text-[10px] bg-slate-50 p-2 rounded overflow-x-auto whitespace-pre-wrap'>" + escapeHtml(textResp) + "</pre>"
                                         }
                                     };
                                 }
@@ -1044,7 +1097,7 @@ CRITICAL RULES:
                                 error: {
                                     type: "safety",
                                     title: "內容遭安全過濾",
-                                    detail: "圖片內容觸發了 Gemini 的安全機制（原因：" + finishReason + "）。"
+                                    detail: "圖片內容觸發了安全機制。"
                                 }
                             };
                         }
@@ -1053,7 +1106,7 @@ CRITICAL RULES:
                             error: {
                                 type: "empty_response",
                                 title: "API 回傳空白",
-                                detail: "Gemini 未能傳回批改結果。請確認照片是否清晰可讀。"
+                                detail: "Gemini 未能傳回批改結果。"
                             }
                         };
                     } else {
@@ -1072,7 +1125,7 @@ CRITICAL RULES:
                         continue;
                     }
                 } catch (fetchErr) {
-                    console.error("批改 Fetch 錯誤 (模型 " + model + "):", fetchErr);
+                    console.error("批改 Fetch 錯誤:", fetchErr);
                     lastError = { response: null, data: null };
                     continue;
                 }
@@ -1093,10 +1146,10 @@ CRITICAL RULES:
             return div.innerHTML;
         }
 
-        // ===== 默書流程控制 =====
+        // ===== 默書流程控制 (支援中文粵語自動判斷與朗讀) =====
         btnStart.addEventListener('click', () => {
             const rawText = inputWords.value.trim();
-            if (!rawText) return showAlert("請先輸入默書詞彙！");
+            if (!rawText) return showAlert("請先輸入默書詞彙或句子！");
 
             originalWords = rawText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l => l.length > 0);
             if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
@@ -1109,23 +1162,43 @@ CRITICAL RULES:
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
 
-            updateProgress();
-            setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+            updateProgressAndDisplay();
+            playCurrentItem();
         });
 
-        function updateProgress() {
+        function updateProgressAndDisplay() {
             progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
+            const currentText = dictationQueue[currentQueueIndex];
+            currentWordDisplay.innerText = currentText;
+
+            // 判斷語言標籤
+            const hasChinese = /[\u4e00-\u9fa5]/.test(currentText);
+            if (currentLanguageMode === 'cantonese' || (currentLanguageMode === 'auto' && hasChinese)) {
+                activeLangBadge.innerText = "粵語/中文";
+                activeLangBadge.className = "text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md";
+            } else {
+                activeLangBadge.innerText = "英文";
+                activeLangBadge.className = "text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-md";
+            }
+        }
+
+        function playCurrentItem() {
+            const currentText = dictationQueue[currentQueueIndex];
+            const hasChinese = /[\u4e00-\u9fa5]/.test(currentText);
+            const forceCantonese = (currentLanguageMode === 'cantonese') || (currentLanguageMode === 'auto' && hasChinese);
+            
+            setTimeout(() => speakText(currentText, forceCantonese), 250);
         }
 
         btnPlayWord.addEventListener('click', () => {
-            speakText(dictationQueue[currentQueueIndex]);
+            playCurrentItem();
         });
 
         btnNextSentence.addEventListener('click', () => {
             currentQueueIndex++;
             if (currentQueueIndex < dictationQueue.length) {
-                updateProgress();
-                setTimeout(() => speakText(dictationQueue[currentQueueIndex]), 300);
+                updateProgressAndDisplay();
+                playCurrentItem();
             } else {
                 dictationScreen.classList.add('hidden');
                 resultScreen.classList.remove('hidden');
@@ -1144,8 +1217,8 @@ CRITICAL RULES:
             dictationScreen.classList.remove('hidden');
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
-            updateProgress();
-            setTimeout(() => speakText(dictationQueue[0]), 300);
+            updateProgressAndDisplay();
+            playCurrentItem();
         });
 
         btnRestart.addEventListener('click', () => {
