@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
     <title>自動默書小幫手 - 雙語智能版</title>
-    
+
+    <!-- PWA 必要：載入 Manifest 檔案 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://miaoda.feishu.cn">
     <link href="https://miaoda.feishu.cn/fonts/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -34,20 +40,39 @@
 
         <!-- 畫面 1：準備默書 -->
         <div id="setup-screen" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
-            <div class="flex items-center justify-between">
+            
+            <div class="flex flex-col space-y-2">
                 <h2 class="text-lg font-bold text-slate-800">準備默書</h2>
+                
+                <!-- 手動切換科目按鈕區 -->
+                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1.5">
+                    <span class="text-[11px] font-semibold text-slate-400 px-1">選擇默書科目／語言</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="btn-mode-en" class="bg-white border-2 border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition">
+                            <span>🇬🇧 英文默書</span>
+                        </button>
+                        <button type="button" id="btn-mode-zh" class="bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm">
+                            <span>🇭🇰 中文 (粵語) 默書</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- 動態語言偵測狀態顯示 -->
-                <div id="dynamic-mode-indicator" class="text-xs bg-slate-100 text-slate-600 font-semibold px-3 py-1 rounded-full flex items-center space-x-1">
-                    <span>✨ 智慧語系切換：等待輸入...</span>
+                <div id="dynamic-mode-indicator" class="text-xs bg-purple-100 text-purple-700 font-semibold px-3 py-1.5 rounded-xl flex items-center justify-between">
+                    <span>✨ 目前模式：中文 (粵語) 默書</span>
+                    <span id="lang-auto-badge" class="text-[10px] bg-purple-200 px-2 py-0.5 rounded-md">自動偵測中</span>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between">
-                <p id="helper-desc" class="text-sm text-slate-500">請貼上英文詞語或中文文章，系統會自動切換對應語系與發音。</p>
-                <div class="flex space-x-1.5">
-                    <button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
-                    <button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
+            <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                    <p id="helper-desc" class="text-xs text-slate-500">請拍攝或上傳課本相片，Gemini 將自動提取印刷課文。</p>
+                    <div class="flex space-x-1.5">
+                        <button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
+                        <button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
+                    </div>
                 </div>
+                <p class="text-[11px] text-blue-600 leading-tight">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記與標題）</p>
             </div>
 
             <!-- 中文智慧標點短句切分工具列 -->
@@ -63,6 +88,40 @@
 2. The children are playing Frisbee."></textarea>
             </div>
 
+            <!-- 拍照與相冊選擇按鈕區 -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="relative overflow-hidden">
+                    <input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                    <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>📷 現場拍照辨識</span>
+                    </button>
+                </div>
+
+                <div class="relative overflow-hidden">
+                    <input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                    <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>🖼️ 上傳多張相片</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 首頁直接跳轉 AI 批改頁按鈕（當輸入框有內容時顯現） -->
+            <div id="direct-grading-container" class="transition-all duration-200">
+                <button type="button" id="btn-direct-grading" class="w-full bg-indigo-50 border-2 border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center space-x-2 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>✨ 直接跳轉到 AI 批改頁（需選字欄有內容）</span>
+                </button>
+            </div>
+
             <!-- Gemini 視覺載入進度提示框 -->
             <div id="ocr-status-container" class="hidden bg-blue-50 border border-blue-100 p-3.5 rounded-xl shadow-xs">
                 <div class="flex items-center space-x-2 mb-1.5">
@@ -76,41 +135,6 @@
                 <div id="ocr-retry-container" class="hidden ml-6 mt-2">
                     <button id="btn-ocr-retry" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
                 </div>
-            </div>
-
-            <!-- 拍照與相冊選擇按鈕區 -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="relative overflow-hidden">
-                    <input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                    <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>現場拍照辨識</span>
-                    </button>
-                </div>
-
-                <div class="relative overflow-hidden">
-                    <input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                    <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>上傳相片辨識</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 首頁直接批改功能按鈕區 -->
-            <div id="home-direct-grading-container" class="hidden relative overflow-hidden bg-indigo-50 border border-indigo-100 p-3 rounded-xl">
-                <input type="file" id="home-grading-upload" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                <button type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 px-3 rounded-lg transition shadow-xs flex items-center justify-center space-x-1.5 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>✨ 直接跳轉到 AI 批改頁（需字欄有內容）</span>
-                </button>
             </div>
 
             <!-- 文字儲存與歷史紀錄管理區 -->
@@ -157,16 +181,15 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div class="flex items-center space-x-2">
                     <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 題 / 共 5 題</span>
-                    <span id="active-lang-badge" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md">🇭🇰 粵語/中文</span>
+                    <span id="active-lang-badge" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md">🇭🇰 中文 (粵語)</span>
                 </div>
                 <button id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
-            <!-- 當前播放內容提示（已隱藏文字以防偷看） -->
-            <div class="bg-slate-50 border border-slate-100 p-3.5 rounded-xl text-center space-y-1">
-                <p class="text-xs text-slate-500 font-medium">🎧 專心聆聽語音題目</p>
-                <p id="current-word-display" class="hidden text-base font-bold text-slate-800 tracking-wide"></p>
-                <p class="text-[11px] text-slate-400">答案已隱藏，請用心聽寫默作</p>
+            <!-- 隱藏播放中文字卡片 (防止學童偷看答案) -->
+            <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center flex flex-col items-center justify-center min-h-20 space-y-1">
+                <span class="text-xs font-semibold text-slate-400">🔒 語音題目播放中 (文字已隱藏)</span>
+                <p class="text-[11px] text-slate-400">請仔細聆聽並寫在默書本上</p>
             </div>
 
             <div class="flex flex-col items-center justify-center py-2 space-y-3">
@@ -175,37 +198,35 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                     </svg>
                 </button>
-                <span class="text-xs font-medium text-slate-500">點擊喇叭即可「重播一次」</span>
+                <span class="text-xs font-medium text-slate-500">點擊喇叭即可「重播當前句」</span>
             </div>
 
-            <!-- 上一句／下一句控制按鈕 -->
-            <div class="space-y-2 pt-2">
-                <!-- 最後一題時出現的快捷全篇 1.2x 複查按鈕 -->
-                <button id="btn-review-all-fast" class="hidden w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-xl transition shadow-md shadow-amber-100 flex items-center justify-center space-x-2 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>⚡ 1.2x 快速播放全文複查</span>
-                </button>
-
+            <!-- 控制按鈕區：播上一題 / 播下一題 / 全文快速複查 -->
+            <div class="space-y-2.5 pt-2">
                 <div class="flex space-x-2">
-                    <button id="btn-prev-sentence" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
+                    <button id="btn-prev-sentence" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                         </svg>
-                        <span>上一題</span>
+                        <span>播上一題</span>
                     </button>
-                    <button id="btn-next-sentence" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-base">
-                        <span id="next-btn-text">播下一題</span>
+
+                    <button id="btn-next-sentence" class="flex-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-sm">
+                        <span id="btn-next-text">播下一題</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                         </svg>
                     </button>
                 </div>
+
+                <!-- 快速 1.2x 全文播放按鈕（播放到最後一題時自動亮起） -->
+                <button id="btn-fast-review" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5 text-xs">
+                    <span>⚡ 1.2x 快速播放全文複查 (檢查默寫)</span>
+                </button>
             </div>
         </div>
 
-        <!-- 畫面 3：結算與批改畫面 -->
+        <!-- 畫面 3：結算畫面 (含 AI 批改) -->
         <div id="result-screen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col space-y-5">
             <div class="text-center py-2">
                 <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -213,8 +234,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h2 id="result-title" class="text-lg font-bold text-slate-800">完成默書！</h2>
-                <p id="result-summary" class="text-xs text-slate-500 mt-0.5">直接進行手寫作業紅筆批改</p>
+                <h2 class="text-xl font-bold text-slate-800">完成默書！</h2>
+                <p id="result-summary" class="text-xs text-slate-500 mt-1">直接進行手寫作業紅筆批改</p>
             </div>
 
             <!-- AI 拍照紅筆批改按鈕 -->
@@ -307,13 +328,564 @@
     </div>
 
     <script>
-        // ===== 核心設定 (修正 API 模型路徑備用機制) =====
-        const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+        // ===== PWA 自動註冊 Service Worker =====
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => { console.log('Service Worker 註冊成功:', reg.scope); })
+                    .catch((err) => { console.log('Service Worker 註冊失敗:', err); });
+            });
+        }
+
+        // ===== 核心設定 (修正 API 模型與連線陣列) =====
+        const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
         const STORAGE_KEY = 'my_dictation_saved_lists_v11_05';
 
         // ===== DOM 元素綁定 =====
-<!-- ... existing code -->
+        const setupScreen = document.getElementById('setup-screen');
+        const dictationScreen = document.getElementById('dictation-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const inputWords = document.getElementById('input-words');
+        const helperDesc = document.getElementById('helper-desc');
+        const dynamicModeIndicator = document.getElementById('dynamic-mode-indicator');
+        const langAutoBadge = document.getElementById('lang-auto-badge');
+
+        const btnModeEn = document.getElementById('btn-mode-en');
+        const btnModeZh = document.getElementById('btn-mode-zh');
+        const segmentToolbar = document.getElementById('segment-toolbar');
+        const btnAutoSegment = document.getElementById('btn-auto-segment');
+
+        const btnDirectGrading = document.getElementById('btn-direct-grading');
+        const directGradingContainer = document.getElementById('direct-grading-container');
+
+        const btnStart = document.getElementById('btn-start');
+        const cameraUpload = document.getElementById('camera-upload');
+        const galleryUpload = document.getElementById('gallery-upload');
+        const ocrStatusContainer = document.getElementById('ocr-status-container');
+        const ocrStatusText = document.getElementById('ocr-status-text');
+        const ocrStatusDetail = document.getElementById('ocr-status-detail');
+        const ocrRetryContainer = document.getElementById('ocr-retry-container');
+        const btnOcrRetry = document.getElementById('btn-ocr-retry');
+        const speechSpeedSelect = document.getElementById('speech-speed');
+
+        const btnSelectAll = document.getElementById('btn-select-all');
+        const btnClearAll = document.getElementById('btn-clear-all');
+        const gradingUpload = document.getElementById('grading-upload');
+        const gradingStatusContainer = document.getElementById('grading-status-container');
+        const gradingStatusText = document.getElementById('grading-status-text');
+        const gradingStatusDetail = document.getElementById('grading-status-detail');
+        const gradingRetryContainer = document.getElementById('grading-retry-container');
+        const btnGradingRetry = document.getElementById('btn-grading-retry');
+        const gradingResultContainer = document.getElementById('grading-result-container');
+        const gradingScore = document.getElementById('grading-score');
+        const gradingDetails = document.getElementById('grading-details');
+
+        const progressIndicator = document.getElementById('progress-indicator');
+        const activeLangBadge = document.getElementById('active-lang-badge');
+        const btnPlayWord = document.getElementById('btn-play-word');
+        const btnPrevSentence = document.getElementById('btn-prev-sentence');
+        const btnNextSentence = document.getElementById('btn-next-sentence');
+        const btnNextText = document.getElementById('btn-next-text');
+        const btnFastReview = document.getElementById('btn-fast-review');
+        const btnBackSetup = document.getElementById('btn-back-setup');
+        const resultSummary = document.getElementById('result-summary');
+        const btnRetryAll = document.getElementById('btn-retry-all');
+        const btnRestart = document.getElementById('btn-restart');
+
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalClose = document.getElementById('modal-close');
+        const btnSaveCurrent = document.getElementById('btn-save-current');
+        const savedListsContainer = document.getElementById('saved-lists-container');
+
+        const cropModal = document.getElementById('crop-modal');
+        const cropModalTitle = document.getElementById('crop-modal-title');
+        const cropCanvas = document.getElementById('crop-canvas');
+        const ctxCrop = cropCanvas.getContext('2d');
+        const btnSkipCrop = document.getElementById('btn-skip-crop');
+        const btnConfirmCrop = document.getElementById('btn-confirm-crop');
+
+        // ===== 狀態變數 =====
+        let originalWords = [];
+        let dictationQueue = [];
+        let currentQueueIndex = 0;
+        let selectedLanguageOverride = null; // 'zh' or 'en' or null
+
+        let pendingFiles = [];
+        let currentFileIndex = 0;
+        let accumulatedOCRTextResults = [];
+        let currentImgObj = null;
+        let cropRect = { x: 0, y: 0, width: 0, height: 0 };
+        let isDragging = false;
+        let startX = 0, startY = 0;
+
+        let lastOcrContext = null;
+        let lastGradingContext = null;
+
+        // ===== 初始化 =====
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSavedLists();
+            checkInputLanguageAndSegment();
+        });
+
+        // ===== 手動語言切換按鈕事件 =====
+        btnModeEn.addEventListener('click', () => {
+            selectedLanguageOverride = 'en';
+            btnModeEn.className = "bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm";
+            btnModeZh.className = "bg-white border-2 border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition";
+            checkInputLanguageAndSegment();
+        });
+
+        btnModeZh.addEventListener('click', () => {
+            selectedLanguageOverride = 'zh';
+            btnModeZh.className = "bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm";
+            btnModeEn.className = "bg-white border-2 border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition";
+            checkInputLanguageAndSegment();
+        });
+
+        // ===== 根據文字內容與切換狀態更新介面 =====
+        inputWords.addEventListener('input', () => {
+            checkInputLanguageAndSegment();
+        });
+
+        function detectLanguageMode(text) {
+            if (selectedLanguageOverride === 'en') return 'english';
+            if (selectedLanguageOverride === 'zh') return 'cantonese';
+
+            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+            const hasEnglish = /[a-zA-Z]/.test(text);
+            if (hasChinese && !hasEnglish) return 'cantonese';
+            if (hasEnglish && !hasChinese) return 'english';
+            if (hasChinese && hasEnglish) return 'bilingual';
+            return 'cantonese';
+        }
+
+        function checkInputLanguageAndSegment() {
+            const text = inputWords.value.trim();
+            const mode = detectLanguageMode(text);
+
+            if (mode === 'cantonese') {
+                dynamicModeIndicator.innerHTML = '<span>✨ 目前模式：中文 (粵語) 默書</span><span class="text-[10px] bg-purple-200 px-2 py-0.5 rounded-md">' + (selectedLanguageOverride ? '手動設定' : '自動辨識') + '</span>';
+                dynamicModeIndicator.className = 'text-xs bg-purple-100 text-purple-700 font-semibold px-3 py-1.5 rounded-xl flex items-center justify-between';
+            } else if (mode === 'english') {
+                dynamicModeIndicator.innerHTML = '<span>✨ 目前模式：英文默書</span><span class="text-[10px] bg-blue-200 px-2 py-0.5 rounded-md">' + (selectedLanguageOverride ? '手動設定' : '自動辨識') + '</span>';
+                dynamicModeIndicator.className = 'text-xs bg-blue-100 text-blue-700 font-semibold px-3 py-1.5 rounded-xl flex items-center justify-between';
+            } else {
+                dynamicModeIndicator.innerHTML = '<span>🌐 目前模式：中英雙語混合默書</span><span class="text-[10px] bg-emerald-200 px-2 py-0.5 rounded-md">自動辨識</span>';
+                dynamicModeIndicator.className = 'text-xs bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-xl flex items-center justify-between';
+            }
+
+            // 檢查是否顯示「中文標點智慧分句」
+            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+            if (hasChinese && (text.length > 15 || /[，、。！？；]/.test(text))) {
+                segmentToolbar.classList.remove('hidden');
+            } else {
+                segmentToolbar.classList.add('hidden');
+            }
+
+            // 選字欄有內容時顯示快捷直接批改按鈕
+            if (text.length > 0) {
+                directGradingContainer.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                directGradingContainer.classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        // 首頁直接跳轉 AI 批改頁
+        btnDirectGrading.addEventListener('click', () => {
+            const rawText = inputWords.value.trim();
+            if (!rawText) return showAlert("請先在選字欄中輸入或選擇默書內容！");
+
+            originalWords = rawText.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l => l.length > 0);
+            if (originalWords.length === 0) return showAlert("沒有找到有效的默書內容！");
+
+            setupScreen.classList.add('hidden');
+            dictationScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            gradingResultContainer.classList.add('hidden');
+            hideGradingStatus();
+
+            resultSummary.innerText = "直接進行手寫作業紅筆批改（共 " + originalWords.length + " 題）";
+            showAlert("已將選字欄內容設為標準答案，請直接拍攝或上傳學童手寫作業！");
+        });
+
+        // 智慧標點分句執行
+        btnAutoSegment.addEventListener('click', () => {
+            let text = inputWords.value.trim();
+            if (!text) return;
+
+            let cleaned = text.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).join('');
+            let segments = [];
+            let currentSeg = "";
+            for (let i = 0; i < cleaned.length; i++) {
+                let char = cleaned[i];
+                currentSeg += char;
+                if (/[。！？；，、]/.test(char)) {
+                    if (currentSeg.trim().length > 0) {
+                        segments.push(currentSeg.trim());
+                        currentSeg = "";
+                    }
+                }
+            }
+            if (currentSeg.trim().length > 0) {
+                segments.push(currentSeg.trim());
+            }
+
+            if (segments.length === 0) segments = [cleaned];
+
+            inputWords.value = segments.map((s, idx) => (idx + 1) + ". " + s).join('\n');
+            segmentToolbar.classList.add('hidden');
+            checkInputLanguageAndSegment();
+            showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
+        });
+
+        // ===== 通用對話框 =====
+        function showAlert(msg) {
+            modalMessage.innerText = msg;
+            customModal.classList.remove('hidden');
+        }
+        modalClose.addEventListener('click', () => customModal.classList.add('hidden'));
+        customModal.addEventListener('click', (e) => {
+            if (e.target === customModal) customModal.classList.add('hidden');
+        });
+
+        // ===== 儲存機制 =====
+        function loadSavedLists() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        function saveListsToStorage(lists) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+        }
+
+        function renderSavedLists() {
+            const lists = loadSavedLists();
+            if (lists.length === 0) {
+                savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
+                return;
+            }
+
+            savedListsContainer.innerHTML = '';
+            lists.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
+
+                const titleContainer = document.createElement('div');
+                titleContainer.className = "flex items-center space-x-2 flex-1 mr-2 cursor-pointer truncate";
+
+                const hasChinese = /[\u4e00-\u9fa5]/.test(item.content);
+                const badge = document.createElement('span');
+                badge.className = "text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 " + (hasChinese ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700');
+                badge.innerText = hasChinese ? '中文粵語' : '英文';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = "text-xs font-medium text-slate-700 truncate";
+                titleSpan.innerText = item.title;
+
+                titleContainer.appendChild(badge);
+                titleContainer.appendChild(titleSpan);
+
+                titleContainer.addEventListener('click', () => {
+                    inputWords.value = item.content;
+                    checkInputLanguageAndSegment();
+                    showAlert("已成功載入：「" + item.title + "」");
+                });
+
+                const btnDel = document.createElement('button');
+                btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
+                btnDel.innerHTML = "✕";
+                btnDel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    let currentLists = loadSavedLists();
+                    currentLists.splice(index, 1);
+                    saveListsToStorage(currentLists);
+                    renderSavedLists();
+                });
+
+                div.appendChild(titleContainer);
+                div.appendChild(btnDel);
+                savedListsContainer.appendChild(div);
+            });
+        }
+
+        btnSaveCurrent.addEventListener('click', () => {
+            const text = inputWords.value.trim();
+            if (!text) return showAlert("沒有內容可供儲存！");
+            const firstLine = text.split('\n')[0].trim();
+            const defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
+            let titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
+            if (!titleName) return;
+
+            let lists = loadSavedLists();
+            lists.unshift({ id: Date.now(), title: titleName.trim(), content: text });
+            if (lists.length > 20) lists.pop();
+            saveListsToStorage(lists);
+            renderSavedLists();
+            showAlert("「" + titleName + "」已成功儲存！");
+        });
+
+        // ===== 文本操作按鈕 =====
+        let isAllSelected = false;
+        btnSelectAll.addEventListener('click', () => {
+            inputWords.focus();
+            if (!isAllSelected) {
+                inputWords.select();
+                btnSelectAll.innerText = "取消全選";
+                isAllSelected = true;
+            } else {
+                inputWords.setSelectionRange(inputWords.value.length, inputWords.value.length);
+                btnSelectAll.innerText = "全選";
+                isAllSelected = false;
+            }
+        });
+
+        btnClearAll.addEventListener('click', () => {
+            if (inputWords.value.trim() === '') return;
+            if (confirm("確定要清除全部文字嗎？")) {
+                inputWords.value = '';
+                isAllSelected = false;
+                btnSelectAll.innerText = "全選";
+                segmentToolbar.classList.add('hidden');
+                checkInputLanguageAndSegment();
+            }
+        });
+
+        // ===== 智能語音發音核心 (自動根據中英文切換發音) =====
+        function speakText(text, overrideSpeed) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            const rate = overrideSpeed || (parseFloat(speechSpeedSelect.value) || 0.5);
+            utterance.rate = rate;
+
+            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+
+            if (selectedLanguageOverride === 'zh' || (selectedLanguageOverride !== 'en' && hasChinese)) {
+                utterance.lang = 'zh-HK'; // 繁體中文香港粵語核心
+            } else {
+                utterance.lang = 'en-GB'; // 英文核心
+            }
+
+            const voices = window.speechSynthesis.getVoices();
+            if (utterance.lang === 'zh-HK') {
+                const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
+                if (hkVoice) utterance.voice = hkVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        }
+
+        // ===== 圖片上傳與裁切處理 =====
+        cameraUpload.addEventListener('change', handleImageUpload);
+        galleryUpload.addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            pendingFiles = Array.from(files);
+            currentFileIndex = 0;
+            accumulatedOCRTextResults = [];
+            e.target.value = '';
+            processNextFileForCrop();
+        }
+
+        function processNextFileForCrop() {
+            if (currentFileIndex >= pendingFiles.length) {
+                if (accumulatedOCRTextResults.length > 0) {
+                    reindexAndAppendText(accumulatedOCRTextResults.join('\n'));
+                }
+                return;
+            }
+            const file = pendingFiles[currentFileIndex];
+            cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
+            cropModal.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    currentImgObj = img;
+                    cropRect = { x: 0, y: 0, width: img.width, height: img.height };
+                    drawCropCanvas();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawCropCanvas() {
+            if (!currentImgObj) return;
+            cropCanvas.width = currentImgObj.width;
+            cropCanvas.height = currentImgObj.height;
+            ctxCrop.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctxCrop.drawImage(currentImgObj, 0, 0);
+
+            ctxCrop.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctxCrop.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctxCrop.save();
+            ctxCrop.beginPath();
+            ctxCrop.rect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
+            ctxCrop.clip();
+            ctxCrop.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctxCrop.drawImage(currentImgObj, 0, 0);
+            ctxCrop.restore();
+            ctxCrop.strokeStyle = '#3b82f6';
+            ctxCrop.lineWidth = 3;
+            ctxCrop.strokeRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
+        }
+
+        function getCanvasCoords(e) {
+            const rect = cropCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (cropCanvas.width / rect.width),
+                y: (clientY - rect.top) * (cropCanvas.height / rect.height)
+            };
+        }
+
+        const startDrag = (e) => {
+            isDragging = true;
+            const coords = getCanvasCoords(e);
+            startX = coords.x; startY = coords.y;
+            cropRect = { x: startX, y: startY, width: 0, height: 0 };
+        };
+        const doDrag = (e) => {
+            if (!isDragging) return;
+            const coords = getCanvasCoords(e);
+            let w = coords.x - startX, h = coords.y - startY;
+            let rx = startX, ry = startY;
+            if (w < 0) { rx = coords.x; w = Math.abs(w); }
+            if (h < 0) { ry = coords.y; h = Math.abs(h); }
+            cropRect = { x: rx, y: ry, width: w, height: h };
+            drawCropCanvas();
+            if(e.type === 'touchmove') e.preventDefault();
+        };
+        const endDrag = () => {
+            isDragging = false;
+            if (cropRect.width < 20 || cropRect.height < 20) {
+                if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
+                drawCropCanvas();
+            }
+        };
+
+        cropCanvas.addEventListener('mousedown', startDrag);
+        cropCanvas.addEventListener('mousemove', doDrag);
+        window.addEventListener('mouseup', endDrag);
+        cropCanvas.addEventListener('touchstart', startDrag, {passive: false});
+        cropCanvas.addEventListener('touchmove', doDrag, {passive: false});
+        cropCanvas.addEventListener('touchend', endDrag);
+
+        btnConfirmCrop.addEventListener('click', () => {
+            cropModal.classList.add('hidden');
+            executeGeminiVision(false);
+        });
+
+        btnSkipCrop.addEventListener('click', () => {
+            cropModal.classList.add('hidden');
+            if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
+            executeGeminiVision(true);
+        });
+
+        // ===== 錯誤分類 =====
+        function classifyGeminiError(response, errorData) {
+            if (!response) {
+                return { type: "network", title: "網路連線失敗", detail: "無法連線到伺服器。" };
+            }
+            const status = response.status;
+            if (status === 400 || status === 401 || status === 403) {
+                return { type: "invalid_key", title: "API 授權無效", detail: "請確認 API Key 設定。" };
+            }
+            if (status === 429) {
+                return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度限制，請稍候再試。" };
+            }
+            return { type: "server_error", title: "伺服器錯誤", detail: "伺服器暫時無法回應（" + status + "）。" };
+        }
+
+        function showOcrStatus(title, detail, showRetry) {
+            ocrStatusContainer.classList.remove('hidden');
+            ocrStatusText.innerText = title;
+            ocrStatusDetail.innerText = detail || "";
+            if (showRetry) ocrRetryContainer.classList.remove('hidden');
+            else ocrRetryContainer.classList.add('hidden');
+        }
+
+        function hideOcrStatus() {
+            ocrStatusContainer.classList.add('hidden');
+            ocrRetryContainer.classList.add('hidden');
+        }
+
+        async function executeGeminiVision(isSkipped) {
+            if (!currentImgObj) return;
+
+            let targetCanvas = document.createElement('canvas');
+            let tCtx = targetCanvas.getContext('2d');
+
+            let sw = isSkipped || cropRect.width === 0 ? currentImgObj.width : cropRect.width;
+            let sh = isSkipped || cropRect.height === 0 ? currentImgObj.height : cropRect.height;
+            let sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
+            let sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
+
+            targetCanvas.width = sw;
+            targetCanvas.height = sh;
+            tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, sw, sh);
+
+            showOcrStatus("正在分析中英文字體...", "步驟 1/2：智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
+
+            targetCanvas.toBlob(async (blob) => {
+                try {
+                    const base64Data = await blobToBase64(blob);
+                    lastOcrContext = { base64Data: base64Data, mimeType: "image/jpeg" };
+
+                    const result = await callGeminiOCR(base64Data);
+
+                    if (result.success) {
+                        accumulatedOCRTextResults.push(strictDeduplicateAndSort(result.text));
+                        showOcrStatus("分析完成！", "正在處理下一張圖片...", false);
+                        setTimeout(() => {
+                            currentFileIndex++;
+                            processNextFileForCrop();
+                        }, 400);
+                    } else {
+                        showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
+                    }
+                } catch (err) {
+                    const classified = classifyGeminiError(null, null);
+                    showOcrStatus(classified.title, classified.detail, true);
+                }
+            }, 'image/jpeg', 0.8);
+        }
+
+        btnOcrRetry.addEventListener('click', async () => {
+            if (!lastOcrContext) return;
+            showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
+            try {
+                const result = await callGeminiOCR(lastOcrContext.base64Data);
+                if (result.success) {
+                    accumulatedOCRTextResults.push(strictDeduplicateAndSort(result.text));
+                    hideOcrStatus();
+                    currentFileIndex++;
+                    processNextFileForCrop();
+                } else {
+                    showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
+                }
+            } catch (err) {
+                const classified = classifyGeminiError(null, null);
+                showOcrStatus(classified.title, classified.detail, true);
+            }
+        });
+
+        // 升級：強效過濾 Prompt
         async function callGeminiOCR(base64Data) {
             const systemPrompt = `You are an expert bilingual teacher (English & Chinese Cantonese) for primary students in Hong Kong.
 Extract dictation words, vocabulary, or sentences from the image carefully.
@@ -359,7 +931,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                         body: body
                     });
 
-                    if (response.status === 200) {
+                    if (response.ok) {
                         currentGeminiModel = model;
                         const apiResult = await response.json();
                         const candidate = apiResult.candidates && apiResult.candidates[0];
@@ -375,7 +947,6 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                         let errorData = null;
                         try { errorData = await response.json(); } catch(e) {}
                         lastError = { response: response, data: errorData };
-                        // 當遇到 404 或 500 等錯誤，繼續嘗試陣列中的下一個模型備用
                         continue;
                     }
                 } catch (fetchErr) {
@@ -438,7 +1009,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             inputWords.value = Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
             checkInputLanguageAndSegment();
-            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個項目。");
+            showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
         // ===== AI 批改功能 =====
@@ -460,7 +1031,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             if (!file) return;
             e.target.value = '';
 
-            if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
+            if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
             showGradingStatus("AI 正在批改手寫默書作業...", "步驟 1/2：分析中英文手寫字跡並與標準答案比對中...", false);
             gradingResultContainer.classList.add('hidden');
@@ -545,7 +1116,7 @@ Return ONLY valid JSON. No markdown, no extra text.`;
 
                 try {
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
-                    if (response.status === 200) {
+                    if (response.ok) {
                         currentGeminiModel = model;
                         const result = await response.json();
                         const textResp = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
@@ -562,7 +1133,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
                         let errorData = null;
                         try { errorData = await response.json(); } catch(e) {}
                         lastError = { response: response, data: errorData };
-                        // 當遇到 404 等錯誤，繼續試下一模型備用
                         continue;
                     }
                 } catch (fetchErr) {
@@ -586,7 +1156,6 @@ Return ONLY valid JSON. No markdown, no extra text.`;
 
             setupScreen.classList.add('hidden');
             dictationScreen.classList.remove('hidden');
-            resultScreen.classList.add('hidden');
             gradingResultContainer.classList.add('hidden');
             hideGradingStatus();
 
@@ -597,77 +1166,43 @@ Return ONLY valid JSON. No markdown, no extra text.`;
         function updateProgressAndDisplay() {
             progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
             const currentText = dictationQueue[currentQueueIndex];
-            currentWordDisplay.innerText = currentText;
-
-            // 控管上一題按鈕禁用狀態
-            if (currentQueueIndex === 0) {
-                btnPrevSentence.disabled = true;
-                btnPrevSentence.classList.add('opacity-40', 'cursor-not-allowed');
-            } else {
-                btnPrevSentence.disabled = false;
-                btnPrevSentence.classList.remove('opacity-40', 'cursor-not-allowed');
-            }
-
-            // 判斷是否為最後一題
-            if (currentQueueIndex === dictationQueue.length - 1) {
-                nextBtnText.innerText = "完成默書";
-                btnReviewAllFast.classList.remove('hidden');
-            } else {
-                nextBtnText.innerText = "播下一題";
-                btnReviewAllFast.classList.add('hidden');
-            }
 
             const hasChinese = /[\u4e00-\u9fa5]/.test(currentText);
-            if (hasChinese) {
-                activeLangBadge.innerText = "🇭🇰 中文（粵語）";
+            if (selectedLanguageOverride === 'zh' || (selectedLanguageOverride !== 'en' && hasChinese)) {
+                activeLangBadge.innerText = "🇭🇰 中文 (粵語)";
                 activeLangBadge.className = "text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md";
             } else {
                 activeLangBadge.innerText = "🇬🇧 英文";
                 activeLangBadge.className = "text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-md";
             }
-        }
 
-        function playCurrentItem(overrideSpeed) {
-            const currentText = dictationQueue[currentQueueIndex];
-            setTimeout(() => speakText(currentText, overrideSpeed), 250);
-        }
-
-        // 修改語音播放函數，支援指定速播
-        function speakText(text, overrideSpeed) {
-            if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            const rate = overrideSpeed || parseFloat(speechSpeedSelect.value) || 0.5;
-            utterance.rate = rate;
-
-            const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-
-            if (hasChinese) {
-                utterance.lang = 'zh-HK';
+            // 如果已經是最後一句，按鈕顯示完成，並顯示 1.2x 全文快速複查
+            if (currentQueueIndex === dictationQueue.length - 1) {
+                btnNextText.innerText = "完成默書";
+                btnFastReview.classList.remove('hidden');
             } else {
-                utterance.lang = 'en-GB';
+                btnNextText.innerText = "播下一題";
+                btnFastReview.classList.add('hidden');
             }
 
-            const voices = window.speechSynthesis.getVoices();
-            if (hasChinese) {
-                const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
-                if (hkVoice) {
-                    utterance.voice = hkVoice;
-                } else {
-                    const twOrCnVoice = voices.find(v => v.lang.startsWith('zh'));
-                    if (twOrCnVoice) utterance.voice = twOrCnVoice;
-                }
+            // 第一題時停用「上一題」按鈕
+            if (currentQueueIndex === 0) {
+                btnPrevSentence.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                btnPrevSentence.classList.remove('opacity-50', 'pointer-events-none');
             }
+        }
 
-            window.speechSynthesis.speak(utterance);
+        function playCurrentItem() {
+            const currentText = dictationQueue[currentQueueIndex];
+            setTimeout(() => speakText(currentText), 250);
         }
 
         btnPlayWord.addEventListener('click', () => {
             playCurrentItem();
         });
 
-        // 上一題按鈕
+        // 播上一題
         btnPrevSentence.addEventListener('click', () => {
             if (currentQueueIndex > 0) {
                 currentQueueIndex--;
@@ -676,40 +1211,7 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             }
         });
 
-        // 1.2x 全文快速播放檢查
-        btnReviewAllFast.addEventListener('click', () => {
-            if (dictationQueue.length === 0) return;
-            showAlert("正在以 1.2x 快速播放全文，供小朋友最後對答案。");
-            
-            let index = 0;
-            function playNextInSequence() {
-                if (index >= dictationQueue.length) return;
-                const sentence = dictationQueue[index];
-                
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(sentence);
-                utterance.rate = 1.2;
-                
-                const hasChinese = /[\u4e00-\u9fa5]/.test(sentence);
-                utterance.lang = hasChinese ? 'zh-HK' : 'en-GB';
-
-                const voices = window.speechSynthesis.getVoices();
-                if (hasChinese) {
-                    const hkVoice = voices.find(v => v.lang === 'zh-HK' || v.lang.toLowerCase().includes('yue') || v.lang.toLowerCase().includes('cantonese'));
-                    if (hkVoice) utterance.voice = hkVoice;
-                }
-
-                utterance.onend = () => {
-                    index++;
-                    if (index < dictationQueue.length) {
-                        setTimeout(playNextInSequence, 600);
-                    }
-                };
-                window.speechSynthesis.speak(utterance);
-            }
-            playNextInSequence();
-        });
-
+        // 播下一題
         btnNextSentence.addEventListener('click', () => {
             currentQueueIndex++;
             if (currentQueueIndex < dictationQueue.length) {
@@ -718,12 +1220,19 @@ Return ONLY valid JSON. No markdown, no extra text.`;
             } else {
                 dictationScreen.classList.add('hidden');
                 resultScreen.classList.remove('hidden');
-                resultTitle.innerText = "完成默書！";
-                resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！";
+                resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！直接進行手寫作業紅筆批改。";
             }
         });
 
+        // ⚡ 1.2x 全文快速複查
+        btnFastReview.addEventListener('click', () => {
+            const fullText = dictationQueue.join('。 ');
+            showAlert("⚡ 正以 1.2x 速度連貫朗讀全文，請學童檢查默寫本！");
+            speakText(fullText, 1.2);
+        });
+
         btnBackSetup.addEventListener('click', () => {
+            window.speechSynthesis.cancel();
             dictationScreen.classList.add('hidden');
             setupScreen.classList.remove('hidden');
         });
@@ -739,6 +1248,7 @@ Return ONLY valid JSON. No markdown, no extra text.`;
         });
 
         btnRestart.addEventListener('click', () => {
+            window.speechSynthesis.cancel();
             resultScreen.classList.add('hidden');
             setupScreen.classList.remove('hidden');
         });
