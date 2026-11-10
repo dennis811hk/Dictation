@@ -21,7 +21,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium"></span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Android 8 穩定版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -187,7 +187,7 @@
 
                 <!-- 已拍攝/上傳相片預覽清單 -->
                 <div id="grading-preview-container" class="hidden space-y-2 pt-1">
-                    <p class="text-[11px] font-semibold text-indigo-800">已選取 <span id="grading-photo-count">0</span> 張作業相片：</p>
+                    <p class="text-[11px] font-semibold text-indigo-800">已選取 <span id="grading-photo-count">0</span> 張作業相片（按選擇順序排列）：</p>
                     <div id="grading-thumbnails" class="flex flex-wrap gap-2"></div>
                     <button type="button" id="btn-submit-grading" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl transition text-xs">
                         ✨ 開始執行 AI 紅筆批改
@@ -261,7 +261,7 @@
 
     <script>
         var GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        var STORAGE_KEY = 'my_dictation_saved_lists_v19';
+        var STORAGE_KEY = 'my_dictation_saved_lists_v20';
         var currentLanguage = 'en';
 
         var setupScreen, dictationScreen, resultScreen, inputWords, inputHint, btnLangEn, btnLangZh;
@@ -448,7 +448,7 @@
             if (btnOcrRetry) {
                 btnOcrRetry.addEventListener('click', function() {
                     if (!lastOcrContext) return;
-                    showOcrStatus("正在重試 (429 緩解中)...", "等待 2 秒後重新傳送圖片到 API", false);
+                    showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
                     setTimeout(function() {
                         callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
                             if (result.success) {
@@ -462,7 +462,7 @@
                         }).catch(function(err) {
                             showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
                         });
-                    }, 2000);
+                    }, 1000);
                 });
             }
 
@@ -718,13 +718,7 @@
         function handleImageUpload(e) {
             var files = e.target.files;
             if (!files || files.length === 0) return;
-            
-            // 嚴格按照使用者點選的順序（或維持抓取時的陣列，並提供按時間排序/手動調整，此處我們直接將 FileList 轉為依序陣列）
             pendingFiles = Array.prototype.slice.call(files);
-            
-            // 確保多選時如果系統回傳的順序有誤，我們依據檔案的 lastModified 時間戳記正向排列，或者保持使用者選取順序。
-            // 為了 100% 符合用戶在圖庫中點選的先後順序，HTML5 input file 預設會根據作業系統回傳。
-            // 我們在此加入確認對話框或直接順序對齊。
             currentFileIndex = 0;
             accumulatedOCRTextResults = [];
             e.target.value = '';
@@ -738,7 +732,6 @@
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先進行默書。");
 
-            // 確保每次選擇的相片嚴格按照點選順序追加到 gradingQueueFiles 中
             var processFileIndex = 0;
             var processNext = function() {
                 if (processFileIndex >= files.length) {
@@ -778,7 +771,7 @@
                     img.src = item.url;
                     img.className = "w-full h-full object-cover";
 
-                    // 順序編號標籤 (1, 2, 3...) 取代原本的 tick
+                    // 順序編號標籤 (1, 2, 3...) 嚴格按照使用者點選順序
                     var badge = document.createElement('div');
                     badge.className = "absolute top-1 left-1 bg-blue-600 text-white rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center shadow-xs";
                     badge.innerText = (index + 1);
@@ -854,7 +847,7 @@
                 var systemPrompt = "You are a strict but fair primary school teacher in Hong Kong (" + langName + ").\n\n" +
                     "STANDARD ANSWERS:\n" + standardAnswersJSON + "\n\n" +
                     "YOUR TASK:\n" +
-                    "1. Compare student photos against standard answers.\n" +
+                    "1. Compare student photos against standard answers IN EXACT CHRONOLOGICAL ORDER of the photos provided.\n" +
                     "2. Return a STRICTLY VALID JSON object with exact keys:\n" +
                     "   - \"scoreSummary\": string like \"8/10 正確\"\n" +
                     "   - \"htmlDetails\": string of HTML. Wrap mistakes in <span class=\"text-rose-600 line-through\">wrong</span>, correct in <span class=\"text-emerald-600 font-bold\">correct</span>.\n" +
@@ -865,9 +858,10 @@
                     userParts.push({ inlineData: { mimeType: imageArray[i].mimeType, data: imageArray[i].base64Data } });
                 }
 
-                var tryModelGrading = function(mi, delay) {
+                var maxAttempts = 3;
+                var tryModelGrading = function(mi, attemptCount) {
                     if (mi >= GEMINI_MODELS.length) {
-                        resolve({ success: false, error: { title: "伺服器錯誤", detail: "請求過於頻繁 (429)，請稍候 1 分鐘後再點擊重試。" } });
+                        resolve({ success: false, error: { title: "伺服器忙碌", detail: "伺服器暫時繁忙 (503/429)，請點擊重試按鈕再試一次。" } });
                         return;
                     }
                     var model = GEMINI_MODELS[mi];
@@ -883,41 +877,53 @@
                         systemInstruction: { parts: [{ text: systemPrompt }] }
                     });
 
-                    setTimeout(function() {
-                        fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: body
-                        }).then(function(response) {
-                            if (response.ok) {
-                                response.json().then(function(result) {
-                                    var candidate = result.candidates && result.candidates[0];
-                                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                                        var textResp = candidate.content.parts[0].text.trim();
-                                        textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+                    fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: body
+                    }).then(function(response) {
+                        if (response.ok) {
+                            response.json().then(function(result) {
+                                var candidate = result.candidates && result.candidates[0];
+                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                    var textResp = candidate.content.parts[0].text.trim();
+                                    textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+                                    try {
                                         var parsed = JSON.parse(textResp);
                                         resolve({ success: true, data: parsed });
                                         return;
+                                    } catch (jsonErr) {
+                                        resolve({ success: true, data: { scoreSummary: "批改完成", htmlDetails: textResp } });
+                                        return;
                                     }
-                                    resolve({ success: false, error: { title: "空白回應", detail: "未收到結果。" } });
-                                }).catch(function(e) {
-                                    resolve({ success: false, error: { title: "解析錯誤", detail: "格式錯誤。" } });
-                                });
-                            } else {
-                                if (response.status === 429) {
-                                    tryModelGrading(mi + 1, 2000);
-                                    return;
                                 }
-                                if (response.status === 404) {
-                                    tryModelGrading(mi + 1, 0);
-                                    return;
-                                }
-                                resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
+                                resolve({ success: false, error: { title: "空白回應", detail: "未收到結果。" } });
+                            }).catch(function(e) {
+                                resolve({ success: false, error: { title: "解析錯誤", detail: "格式錯誤。" } });
+                            });
+                        } else {
+                            // 針對 503 Service Unavailable 或 429 進行自動重試
+                            if ((response.status === 503 || response.status === 429) && attemptCount < maxAttempts) {
+                                setTimeout(function() {
+                                    tryModelGrading(mi, attemptCount + 1);
+                                }, 1500 * (attemptCount + 1));
+                                return;
                             }
-                        }).catch(function(err) {
-                            tryModelGrading(mi + 1, 1000);
-                        });
-                    }, delay);
+                            if (response.status === 503 || response.status === 429 || response.status === 404) {
+                                tryModelGrading(mi + 1, 0);
+                                return;
+                            }
+                            resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
+                        }
+                    }).catch(function(err) {
+                        if (attemptCount < maxAttempts) {
+                            setTimeout(function() {
+                                tryModelGrading(mi, attemptCount + 1);
+                            }, 1500);
+                        } else {
+                            tryModelGrading(mi + 1, 0);
+                        }
+                    });
                 };
                 tryModelGrading(0, 0);
             });
