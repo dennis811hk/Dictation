@@ -506,11 +506,11 @@
                 if (l) {
                     let pureText = l.replace(/^\d+[\.\)]\s*/, '');
                     if (lang === 'zh') {
-                        let parts = pureText.split(/([，、。！？；]+)/);
+                        let parts = pureText.split(/([，、。！？；…]+)/);
                         let sentence = "";
                         for (let i = 0; i < parts.length; i++) {
                             sentence += parts[i];
-                            if (/[，、。！？；]/.test(parts[i])) {
+                            if (/[，、。！？；…]/.test(parts[i])) {
                                 if (sentence.trim()) cleaned.push(sentence.trim());
                                 sentence = "";
                             }
