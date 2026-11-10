@@ -571,11 +571,12 @@
 
         async function callGeminiOCRData(base64Data, mimeType) {
             const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
-Look at the image carefully and adhere strictly to these rules:
-1. STRICT RULE (PRINTED TEXT ABSOLUTE PRIORITY): The image contains printed textbook or worksheet body text (such as "我愛體育課" reading passages). It also contains student handwritten notes, ticks, red/blue corrections, or exercise numbering annotations. You MUST ABSOLUTELY AND COMPLETELY IGNORE all student handwritten notes, handwriting, ticks, and corrections. Extract ONLY the clean printed textbook body text.
-2. For Chinese text, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each phrase or clause with its punctuation is on its own new line, exactly matching the 29-sentence standard textbook dictation structure.
-3. Detect whether the extracted text is primarily Chinese or English ("zh" or "en").
-4. Return a STRICTLY VALID JSON object with these exact keys:
+Look at the image carefully and adhere strictly to these absolute rules:
+1. STRICT TEXTBOOK BODY ONLY (ABSOLUTE PRIORITY): You must extract ONLY the printed textbook reading passage text (starting from "星期三下午..." and ending at "...籃球運動員！").
+2. ABSOLUTE EXCLUSION OF HANDWRITING: You MUST COMPLETELY AND UTTERLY IGNORE AND OMIT all student handwritten notes, handwritten answers, numbered question prompts (like ①, ② in the margins), underlines, highlighter marks, and side questions. Only pure printed book text is allowed.
+3. For Chinese text, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), semicolon (；), or ellipsis (…) so that each phrase or clause with its punctuation is on its own new line, exactly matching the 29-sentence standard textbook dictation structure.
+4. Detect whether the extracted text is primarily Chinese or English ("zh" or "en").
+5. Return a STRICTLY VALID JSON object with these exact keys:
    - "detectedLang": "zh" or "en"
    - "text": text with clauses separated by line breaks.`;
 
