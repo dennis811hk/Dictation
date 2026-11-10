@@ -21,7 +21,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">旗艦版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">智慧旗艦版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -45,7 +45,7 @@
             </div>
 
             <div class="flex items-center justify-between">
-                <p id="input-hint" class="text-sm text-slate-500">請在下方貼上英文詞彙或句子，每行一個或用換行分隔。<br><span class="text-blue-500 font-medium">（自動識別：拍攝課本印刷字或手寫作業）</span></p>
+                <p id="input-hint" class="text-sm text-slate-500">請在下方貼上英文詞彙或句子，每行一個或用換行分隔。<br><span class="text-blue-500 font-medium">（自動識別：優先提取印刷字，忽略手寫筆記）</span></p>
                 <div class="flex space-x-1.5 flex-shrink-0">
                     <button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                     <button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -237,7 +237,7 @@
 
     <script>
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v24';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v25';
         let currentLanguage = 'en';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -314,12 +314,12 @@
             if (lang === 'en') {
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請在下方貼上英文詞彙或句子，每行一個或用換行分隔。<br><span class=\"text-blue-500 font-medium\">（自動識別：拍攝課本印刷字或手寫作業）</span>";
+                inputHint.innerHTML = "請在下方貼上英文詞彙或句子，每行一個或用換行分隔。<br><span class=\"text-blue-500 font-medium\">（自動識別：優先提取印刷字，忽略手寫筆記）</span>";
                 inputWords.placeholder = "1. The children are playing Frisbee.\n2. They play tug of war, and hide-and-seek.";
             } else {
                 btnLangZh.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-xs";
                 btnLangEn.className = "py-2.5 px-3 rounded-xl text-xs font-semibold transition bg-white text-slate-700 border border-slate-200";
-                inputHint.innerHTML = "請在下方貼上中文詞語或句子，支援以每個標點符號（，、。！？；）自動分句換行。<br><span class=\"text-blue-500 font-medium\">（自動識別：拍攝課本印刷字或手寫作業）</span>";
+                inputHint.innerHTML = "請在下方貼上中文詞語或句子，支援以每個標點符號（，、。！？；）自動分句換行。<br><span class=\"text-blue-500 font-medium\">（自動識別：優先提取印刷字，忽略手寫筆記）</span>";
                 inputWords.placeholder = "1. 星期三下午，我上了一節難忘的體育課，讓我比以前更愛上體育課。";
             }
         }
@@ -433,7 +433,7 @@
             accumulatedOCRTextResults = [];
             e.target.value = '';
 
-            showOcrStatus("正在分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 1 張 / 共 " + pendingFiles.length + " 張相片（優先提取印刷字）...", false);
             processNextFileDirectOCR();
         }
 
@@ -449,7 +449,7 @@
             }
 
             const file = pendingFiles[currentFileIndex];
-            showOcrStatus("正在分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張...", false);
+            showOcrStatus("正在智慧分析相片...", "正在辨識第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張（優先提取印刷字）...", false);
 
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -489,7 +489,7 @@
                 if (l) {
                     let pureText = l.replace(/^\d+[\.\)]\s*/, '');
                     if (lang === 'zh') {
-                        // 如果是中文，遇到逗號或標點自動拆分換行
+                        // 中文：確保每個逗號與標點符號後自動換行
                         let parts = pureText.split(/([，、。！？；]+)/);
                         let sentence = "";
                         for (let i = 0; i < parts.length; i++) {
@@ -528,10 +528,11 @@
 
         async function callGeminiOCRData(base64Data, mimeType) {
             const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
-Look at the image:
-1. Detect whether the text is primarily Chinese or English ("zh" or "en").
-2. Extract the text. For Chinese, strictly split sentences after every comma (，), period (。), exclamation mark (!), question mark (？), or semicolon (；) so that each clause or phrase with its punctuation is on its own new line.
-3. Return a STRICTLY VALID JSON object with these exact keys:
+Look at the image carefully:
+1. STRICT RULE: If the image contains both printed text (e.g. textbook body text) and handwritten notes or markings, IGNORE the handwriting and extract ONLY the printed text. Only if there is NO printed text at all in the image should you extract handwritten text.
+2. Detect whether the extracted text is primarily Chinese or English ("zh" or "en").
+3. For Chinese, strictly split clauses and sentences after every comma (，), period (。), exclamation mark (!), question mark (？), or semicolon (；) so that each phrase or clause with its punctuation is on its own new line.
+4. Return a STRICTLY VALID JSON object with these exact keys:
    - "detectedLang": "zh" or "en"
    - "text": text with clauses separated by line breaks.`;
 
@@ -544,7 +545,7 @@ Look at the image:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract dictation text and split Chinese sentences at every comma and punctuation. Return valid JSON only." },
+                            { text: "Extract dictation text, prioritizing printed text over handwriting, and split Chinese clauses at every comma. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -634,7 +635,7 @@ Look at the image:
                 if (!cleanLine) return;
 
                 if (currentLanguage === 'zh') {
-                    // 中文：嚴格根據逗號、句號等標點切分，每個逗號一律換到下一行
+                    // 中文：每個逗號或標點符號換行到下一行
                     let parts = cleanLine.split(/([，、。！？；]+)/);
                     let sentence = "";
                     for (let i = 0; i < parts.length; i++) {
