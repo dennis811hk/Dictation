@@ -105,7 +105,7 @@
                     <input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
                     <button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <span>🖼️ 上傳多張相片</span>
                     </button>
@@ -246,7 +246,15 @@
                     </svg>
                     <span>Gemini 拍照紅筆批改與比對</span>
                 </div>
-                <p class="text-xs text-indigo-600 leading-relaxed">請將學童手寫默書作業拍照上傳，AI 將自動與原標準答案比對並標註錯別字。</p>
+                <div class="bg-white p-2.5 rounded-lg border border-indigo-100 text-[11px] text-slate-600 space-y-1">
+                    <p class="font-semibold text-indigo-800">圖例與說明：</p>
+                    <div class="flex items-center space-x-3">
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 bg-rose-600 inline-block rounded-full mr-1"></span> <strong class="text-rose-600">紅色標註</strong>：錯字 / 拼錯字 / 誤寫字</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 bg-emerald-600 inline-block rounded-full mr-1"></span> <strong class="text-emerald-600">綠色標註</strong>：漏字 / 遺漏詞彙 / Correct 補全</span>
+                    </div>
+                </div>
 
                 <div class="relative overflow-hidden">
                     <input type="file" id="grading-upload" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
@@ -1086,12 +1094,18 @@ ${standardAnswersJSON}
 
 YOUR TASK:
 1. Look at the student's handwritten dictation paper in the photo (supports Chinese characters and English).
-2. Compare each item against standard answers. Identify typos, wrong Chinese characters (錯別字), missing words, punctuation errors.
-3. Return a STRICTLY VALID JSON object with exact keys:
-   - "scoreSummary": string like "8/10 正確" or "62 分 — 有 3 個錯別字"
-   - "htmlDetails": string of HTML. For each sentence, show standard answer in bold, then student's version.
-     Wrap mistakes in: <span class="text-rose-600 line-through font-medium">wrong_text</span>
-     Wrap corrections in: <span class="text-emerald-600 font-bold">correct_text</span>
+2. Compare each item against standard answers. Identify typos, wrong Chinese characters (錯別字), wrong English words, missing words/characters (漏字), and punctuation errors.
+3. COLOR HIGHLIGHTING RULES (VERY IMPORTANT):
+   - **RED COLOR (#e11d48 / text-rose-600)**: Highlight all WRONG characters, TYPOS, MISTAKES, and EXTRA incorrect words.
+     Example: <span class="text-rose-600 line-through font-bold">錯字/Mistake</span> (Followed by standard answer or correction in parentheses).
+   - **GREEN COLOR (#16a34a / text-emerald-600)**: Highlight all MISSING characters/words (漏字) and correct insertions.
+     Example: <span class="text-emerald-600 font-bold">[漏字: 補上正字]</span> or <span class="text-emerald-600 font-bold">[Missing: word]</span>.
+4. Return a STRICTLY VALID JSON object with exact keys:
+   - "scoreSummary": string like "8/10 正確" or "62 分 — 有 3 個錯字，2 個漏字"
+   - "htmlDetails": string of HTML. For each sentence:
+     Show standard answer in bold dark slate, then student's handwritten version analysis.
+     Wrap all wrong characters/words in: <span class="text-rose-600 line-through font-bold">wrong_text</span>
+     Wrap all missing characters/words in: <span class="text-emerald-600 font-bold">[漏字: missing_text]</span>
      Use <div class="mb-2 pb-2 border-b border-slate-100"> around each sentence's analysis.
      Use <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div> for the label.
 Return ONLY valid JSON. No markdown, no extra text.`;
@@ -1106,7 +1120,7 @@ Return ONLY valid JSON. No markdown, no extra text.`;
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Grade student's handwritten dictation paper. Return valid JSON only." },
+                            { text: "Grade student's handwritten dictation paper. Highlight ALL WRONG WORDS IN RED and ALL MISSING WORDS IN GREEN. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
