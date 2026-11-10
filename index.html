@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自動默書小幫手 - 穩健相容版</title>
+    <title>自動默書小幫手 - 智慧防護版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -260,9 +260,8 @@
     </div>
 
     <script>
-        // ===== 安全防錯全域變數與初始化 =====
         var GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        var STORAGE_KEY = 'my_dictation_saved_lists_v18';
+        var STORAGE_KEY = 'my_dictation_saved_lists_v19';
         var currentLanguage = 'en';
 
         var setupScreen, dictationScreen, resultScreen, inputWords, inputHint, btnLangEn, btnLangZh;
@@ -449,19 +448,21 @@
             if (btnOcrRetry) {
                 btnOcrRetry.addEventListener('click', function() {
                     if (!lastOcrContext) return;
-                    showOcrStatus("正在重試...", "重新傳送圖片到 API 進行辨識", false);
-                    callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
-                        if (result.success) {
-                            accumulatedOCRTextResults.push(formatOCRResultText(result.text));
-                            hideOcrStatus();
-                            currentFileIndex++;
-                            processNextFileForCrop();
-                        } else {
-                            showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
-                        }
-                    }).catch(function(err) {
-                        showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
-                    });
+                    showOcrStatus("正在重試 (429 緩解中)...", "等待 2 秒後重新傳送圖片到 API", false);
+                    setTimeout(function() {
+                        callGeminiOCR(lastOcrContext.base64Data).then(function(result) {
+                            if (result.success) {
+                                accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                                hideOcrStatus();
+                                currentFileIndex++;
+                                processNextFileForCrop();
+                            } else {
+                                showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
+                            }
+                        }).catch(function(err) {
+                            showOcrStatus("網路連線失敗", "無法連線到伺服器。", true);
+                        });
+                    }, 2000);
                 });
             }
 
@@ -897,9 +898,9 @@
                     systemPrompt = "You are an expert English teacher for primary students in Hong Kong.\nExtract dictation sentences from the image carefully.\nCRITICAL INSTRUCTIONS:\n1. Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. No extra commentary, no markdown code blocks.";
                 }
 
-                var tryModel = function(mi) {
+                var tryModel = function(mi, delay) {
                     if (mi >= GEMINI_MODELS.length) {
-                        resolve({ success: false, error: { title: "錯誤", detail: "無法連線" } });
+                        resolve({ success: false, error: { title: "伺服器錯誤", detail: "請求過於頻繁 (429) 或無回應，請稍候 1 分鐘後重試。" } });
                         return;
                     }
                     var model = GEMINI_MODELS[mi];
@@ -917,38 +918,44 @@
                         systemInstruction: { parts: [{ text: systemPrompt }] }
                     });
 
-                    fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: body
-                    }).then(function(response) {
-                        if (response.ok) {
-                            response.json().then(function(apiResult) {
-                                var candidate = apiResult.candidates && apiResult.candidates[0];
-                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                                    var aiFinalText = candidate.content.parts[0].text.trim();
-                                    aiFinalText = aiFinalText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
-                                    if (aiFinalText) {
-                                        resolve({ success: true, text: aiFinalText });
-                                        return;
+                    setTimeout(function() {
+                        fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: body
+                        }).then(function(response) {
+                            if (response.ok) {
+                                response.json().then(function(apiResult) {
+                                    var candidate = apiResult.candidates && apiResult.candidates[0];
+                                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                        var aiFinalText = candidate.content.parts[0].text.trim();
+                                        aiFinalText = aiFinalText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                                        if (aiFinalText) {
+                                            resolve({ success: true, text: aiFinalText });
+                                            return;
+                                        }
                                     }
+                                    resolve({ success: false, error: { title: "空白回應", detail: "Gemini 未能辨識出文字。" } });
+                                }).catch(function(e) {
+                                    resolve({ success: false, error: { title: "解析錯誤", detail: "回應格式錯誤。" } });
+                                });
+                            } else {
+                                if (response.status === 429) {
+                                    tryModel(mi + 1, 2000);
+                                    return;
                                 }
-                                resolve({ success: false, error: { title: "空白回應", detail: "Gemini 未能辨識出文字。" } });
-                            }).catch(function(e) {
-                                resolve({ success: false, error: { title: "解析錯誤", detail: "回應格式錯誤。" } });
-                            });
-                        } else {
-                            if (response.status === 404) {
-                                tryModel(mi + 1);
-                                return;
+                                if (response.status === 404) {
+                                    tryModel(mi + 1, 0);
+                                    return;
+                                }
+                                resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
                             }
-                            resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
-                        }
-                    }).catch(function(err) {
-                        tryModel(mi + 1);
-                    });
+                        }).catch(function(err) {
+                            tryModel(mi + 1, 1000);
+                        });
+                    }, delay);
                 };
-                tryModel(0);
+                tryModel(0, 0);
             });
         }
 
@@ -1204,9 +1211,9 @@
                     userParts.push({ inlineData: { mimeType: imageArray[i].mimeType, data: imageArray[i].base64Data } });
                 }
 
-                var tryModelGrading = function(mi) {
+                var tryModelGrading = function(mi, delay) {
                     if (mi >= GEMINI_MODELS.length) {
-                        resolve({ success: false, error: { title: "錯誤", detail: "連線失敗" } });
+                        resolve({ success: false, error: { title: "伺服器錯誤", detail: "請求過於頻繁 (429)，請稍候 1 分鐘後再點擊重試。" } });
                         return;
                     }
                     var model = GEMINI_MODELS[mi];
@@ -1222,37 +1229,43 @@
                         systemInstruction: { parts: [{ text: systemPrompt }] }
                     });
 
-                    fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: body
-                    }).then(function(response) {
-                        if (response.ok) {
-                            response.json().then(function(result) {
-                                var candidate = result.candidates && result.candidates[0];
-                                if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                                    var textResp = candidate.content.parts[0].text.trim();
-                                    textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                                    var parsed = JSON.parse(textResp);
-                                    resolve({ success: true, data: parsed });
+                    setTimeout(function() {
+                        fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: body
+                        }).then(function(response) {
+                            if (response.ok) {
+                                response.json().then(function(result) {
+                                    var candidate = result.candidates && result.candidates[0];
+                                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                        var textResp = candidate.content.parts[0].text.trim();
+                                        textResp = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+                                        var parsed = JSON.parse(textResp);
+                                        resolve({ success: true, data: parsed });
+                                        return;
+                                    }
+                                    resolve({ success: false, error: { title: "空白回應", detail: "未收到結果。" } });
+                                }).catch(function(e) {
+                                    resolve({ success: false, error: { title: "解析錯誤", detail: "格式錯誤。" } });
+                                });
+                            } else {
+                                if (response.status === 429) {
+                                    tryModelGrading(mi + 1, 2000);
                                     return;
                                 }
-                                resolve({ success: false, error: { title: "空白回應", detail: "未收到結果。" } });
-                            }).catch(function(e) {
-                                resolve({ success: false, error: { title: "解析錯誤", detail: "格式錯誤。" } });
-                            });
-                        } else {
-                            if (response.status === 404) {
-                                tryModelGrading(mi + 1);
-                                return;
+                                if (response.status === 404) {
+                                    tryModelGrading(mi + 1, 0);
+                                    return;
+                                }
+                                resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
                             }
-                            resolve({ success: false, error: { title: "伺服器錯誤", detail: "狀態碼 " + response.status } });
-                        }
-                    }).catch(function(err) {
-                        tryModelGrading(mi + 1);
-                    });
+                        }).catch(function(err) {
+                            tryModelGrading(mi + 1, 1000);
+                        });
+                    }, delay);
                 };
-                tryModelGrading(0);
+                tryModelGrading(0, 0);
             });
         }
     </script>
