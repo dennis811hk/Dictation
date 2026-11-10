@@ -1008,7 +1008,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // ===== AI 批改功能（超嚴格逐字實報比對） =====
+        // ===== AI 批改功能（超嚴格逐字實報比對 & 絕不自動糾錯） =====
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -1073,42 +1073,43 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 重點強化：嚴格逐字「如實識別」與比對 Prompt
+        // 核心強化：超嚴格如實逐字識別 (Strict Transcriber Prompt)
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are a strict primary school teacher in Hong Kong grading a student's handwritten dictation homework.
+            const systemPrompt = `You are a strict, ultra-precise primary school homework grader in Hong Kong. Your task is to transcribe and grade a student's handwritten dictation homework.
 
-STANDARD ANSWERS (Expected correct sentences):
+STANDARD ANSWERS (Expected correct content):
 ${standardAnswersJSON}
 
-CRITICAL MANDATORY GRADING INSTRUCTIONS:
-1. **LITERAL CHARACTER-BY-CHARACTER TRANSCRIBER (如實逐字識別)**:
-   - Carefully look at the student's handwritten text in the photo.
-   - Transcribe EXACTLY what the student wrote, character by character (or English word by word).
-   - **DO NOT AUTO-CORRECT OR INFER MISSING INTENT**: If the student wrote a completely wrong character, a grammatically incorrect sentence, a nonsense word, or made a typo, transcribe the exact wrong character as written.
-   - If the student omitted characters or left a space blank, recognize that character as MISSING.
+CRITICAL MANDATORY INSTRUCTIONS FOR TRANSCRIBING & GRADING:
 
-2. **STRICT COMPARISON & COLOR HIGHLIGHTING**:
-   - Compare the student's literal transcription character-by-character against the corresponding Standard Answer sentence.
-   - **RED COLOR FOR WRONG / EXTRA / MISSPELLED CHARACTERS (錯字/別字/多字)**:
-     Wrap any character the student wrote incorrectly in red:
-     <span class="text-rose-600 line-through font-bold">學生寫錯的字</span><span class="text-rose-600 font-bold">(正字: 正)</span>
-   - **GREEN COLOR FOR MISSING CHARACTERS (漏字)**:
-     Wrap any character in the standard answer that the student completely skipped or left blank in green:
-     <span class="text-emerald-600 font-bold">[漏字: 正]</span>
+1. **LITERAL, UNCORRECTED TRANSCRIPTION (如實逐字識別，絕對禁止自動糾錯)**:
+   - Carefully inspect every single handwritten character or English word in the image.
+   - **TRANSCRIBE EXACTLY WHAT IS WRITTEN**: Even if the student wrote a non-existent character, a wrong character, a grammatically completely wrong sentence, a misspelled English word, or pure gibberish, you MUST transcribe that exact wrong character/word as it appears in the image.
+   - **DO NOT AUTOCORRECT, DO NOT INFER INTENT, DO NOT FIX GRAMMAR**: If the standard is "小鳥在樹上唱歌" and the student wrote "小鳥在木上唱哥", your transcription MUST be "小鳥在木上唱哥". Never change "木" back to "樹" or "哥" back to "歌".
+   - If a character is completely missing or skipped, leave it as missing.
+
+2. **CHARACTER-BY-CHARACTER / WORD-BY-WORD COMPARISON**:
+   - Compare the literal transcription strictly against the Standard Answer.
+   - **RED COLOR (錯字 / 別字 / 錯寫 / 多字)**: Wrap any wrong character, misspelled word, or extra character written by the student in RED styling:
+     <span class="text-rose-600 line-through font-bold">寫錯的字</span><span class="text-rose-600 font-bold">(正字: 應寫的字)</span>
+   - **GREEN COLOR (漏字 / 未寫)**: Wrap any character from the standard answer that the student omitted or left blank in GREEN styling:
+     <span class="text-emerald-600 font-bold">[漏字: 應寫的字]</span>
 
 3. **JSON OUTPUT FORMAT**:
-   Return ONLY a valid JSON object with:
-   - "scoreSummary": e.g., "75 分 — 發現 3 個錯字、2 個漏字"
-   - "htmlDetails": HTML string. For each sentence:
-     - Container: <div class="mb-3 pb-3 border-b border-slate-100">
-     - Sentence index: <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
-     - Standard Answer: <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
-     - Literal Student Analysis: <div class="text-slate-600 leading-normal">學生寫成：[Student's transcribed sentence with RED for wrong chars and GREEN for missing chars]</div>
-     - </div>
+   Return ONLY a valid JSON object with the following structure (no markdown formatting, no extra text):
+   {
+     "scoreSummary": "得分總覽 (例：70 分 — 發現 2 個錯字、1 個漏字)",
+     "htmlDetails": "HTML content string containing individual sentence breakdown"
+   }
 
-Return ONLY valid JSON. No markdown code blocks (```json), no extra text.`;
+   Each item inside "htmlDetails" must follow this HTML structure:
+   <div class="mb-3 pb-3 border-b border-slate-100">
+     <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
+     <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
+     <div class="text-slate-600 leading-relaxed">學生寫成：[Literal transcription with RED/GREEN highlights]</div>
+   </div>`;
 
             let lastError = null;
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
@@ -1120,11 +1121,14 @@ Return ONLY valid JSON. No markdown code blocks (```json), no extra text.`;
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Perform literal, character-by-character dictation transcription and grading. Do not auto-correct student mistakes. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
+                            { text: "Perform a literal, uncorrected transcription of the student's handwritten work in the photo. Compare it strictly character-by-character against the standard answers. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
+                    generationConfig: { 
+                        responseMimeType: "application/json", 
+                        temperature: 0.0 // 零發散度，確保絕不發揮創意自動糾錯
+                    },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
