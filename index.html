@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自動默ש小幫手</title>
+    <title>自動默書小幫手</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
             <span class="text-2xl">🎓</span>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">智慧旗艦版</span>
+        <span class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">旗艦版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -237,7 +237,7 @@
 
     <script>
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v23';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v24';
         let currentLanguage = 'en';
 
         const setupScreen = document.getElementById('setup-screen');
@@ -461,11 +461,10 @@
 
                 callGeminiOCRData(base64Data, mimeType).then((result) => {
                     if (result.success) {
-                        // 智慧自動偵測辨識出的語言
                         if (result.detectedLang && (result.detectedLang === 'zh' || result.detectedLang === 'en')) {
                             setLanguage(result.detectedLang);
                         }
-                        accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                        accumulatedOCRTextResults.push(formatOCRResultText(result.text, result.detectedLang || currentLanguage));
                         currentFileIndex++;
                         processNextFileDirectOCR();
                     } else {
@@ -482,12 +481,29 @@
             reader.readAsDataURL(file);
         }
 
-        function formatOCRResultText(text) {
+        function formatOCRResultText(text, lang) {
             const lines = text.split('\n');
             let cleaned = [];
             lines.forEach(line => {
                 let l = line.trim();
-                if (l) cleaned.push(l.replace(/^\d+[\.\)]\s*/, ''));
+                if (l) {
+                    let pureText = l.replace(/^\d+[\.\)]\s*/, '');
+                    if (lang === 'zh') {
+                        // 如果是中文，遇到逗號或標點自動拆分換行
+                        let parts = pureText.split(/([，、。！？；]+)/);
+                        let sentence = "";
+                        for (let i = 0; i < parts.length; i++) {
+                            sentence += parts[i];
+                            if (/[，、。！？；]/.test(parts[i])) {
+                                if (sentence.trim()) cleaned.push(sentence.trim());
+                                sentence = "";
+                            }
+                        }
+                        if (sentence.trim()) cleaned.push(sentence.trim());
+                    } else {
+                        cleaned.push(pureText);
+                    }
+                }
             });
             return cleaned.join('\n');
         }
@@ -498,7 +514,7 @@
             callGeminiOCRData(lastOcrContext.base64Data, lastOcrContext.mimeType).then((result) => {
                 if (result.success) {
                     if (result.detectedLang) setLanguage(result.detectedLang);
-                    accumulatedOCRTextResults.push(formatOCRResultText(result.text));
+                    accumulatedOCRTextResults.push(formatOCRResultText(result.text, result.detectedLang || currentLanguage));
                     hideOcrStatus();
                     currentFileIndex++;
                     processNextFileDirectOCR();
@@ -513,11 +529,11 @@
         async function callGeminiOCRData(base64Data, mimeType) {
             const systemPrompt = `You are an expert bilingual teacher (English and Chinese) in Hong Kong.
 Look at the image:
-1. Detect whether the text is primarily Chinese or English.
-2. If it is a textbook or printed passage, extract the printed text. If it is handwritten, extract the handwriting.
+1. Detect whether the text is primarily Chinese or English ("zh" or "en").
+2. Extract the text. For Chinese, strictly split sentences after every comma (，), period (。), exclamation mark (!), question mark (？), or semicolon (；) so that each clause or phrase with its punctuation is on its own new line.
 3. Return a STRICTLY VALID JSON object with these exact keys:
    - "detectedLang": "zh" or "en"
-   - "text": a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one sentence per line. For Chinese, ensure correct Chinese punctuation (，、。！？；).`;
+   - "text": text with clauses separated by line breaks.`;
 
             for (let mi = 0; mi < GEMINI_MODELS.length; mi++) {
                 const model = GEMINI_MODELS[mi];
@@ -528,7 +544,7 @@ Look at the image:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Extract the dictation text list and detect language. Return valid JSON only." },
+                            { text: "Extract dictation text and split Chinese sentences at every comma and punctuation. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -618,23 +634,20 @@ Look at the image:
                 if (!cleanLine) return;
 
                 if (currentLanguage === 'zh') {
-                    // 中文：根據標點符號（，、。！？；）切分短句，逗號也換行
-                    let parts = cleanLine.split(/([，、。！？；]+(?:\s+|$))/);
-                    let currentSeg = "";
+                    // 中文：嚴格根據逗號、句號等標點切分，每個逗號一律換到下一行
+                    let parts = cleanLine.split(/([，、。！？；]+)/);
+                    let sentence = "";
                     for (let i = 0; i < parts.length; i++) {
-                        currentSeg += parts[i];
-                        if (i % 2 === 1) {
-                            if (currentSeg.trim().length > 0) {
-                                queue.push(currentSeg.trim());
-                            }
-                            currentSeg = "";
+                        sentence += parts[i];
+                        if (/[，、。！？；]/.test(parts[i])) {
+                            if (sentence.trim()) queue.push(sentence.trim());
+                            sentence = "";
                         }
                     }
-                    if (currentSeg.trim().length > 0) {
-                        queue.push(currentSeg.trim());
+                    if (sentence.trim()) {
+                        queue.push(sentence.trim());
                     }
                 } else {
-                    // 英文：根據句號、問號、驚嘆號等切分
                     let parts = cleanLine.split(/([,.?!;]+(?:\s+|$))/);
                     let currentSeg = "";
                     for (let i = 0; i < parts.length; i++) {
@@ -654,7 +667,6 @@ Look at the image:
             return queue;
         }
 
-        // 語音朗讀
         function speakText(text) {
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
@@ -746,7 +758,6 @@ Look at the image:
             resultSummary.innerText = "已載入標準答案（共 " + originalWords.length + " 句），請上傳作業相片進行紅筆批改！";
         });
 
-        // 結算頁面多張相片上傳與順序編號批改
         gradingCamera.addEventListener('change', handleGradingFiles);
         gradingGallery.addEventListener('change', handleGradingFiles);
 
