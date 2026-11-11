@@ -1110,38 +1110,40 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 核心：重構 Gemini 批改系統提示詞（解決「以/善」及「強/紙訊」誤判問題）
+        // 核心：超高精度錨點對齊與防錯位 Prompt（徹底解決第4與第5題錯位誤標問題）
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
             const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong.
-Your task is to accurately transcribe the student's handwritten dictation from the photo, align it character-by-character with the Standard Answers, and mark errors.
+Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors.
 
-STANDARD ANSWERS (Standard correct sentences):
+STANDARD ANSWERS (Standard correct sentences, ordered by index):
 ${standardAnswersJSON}
 
 CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
 
-1. **ANCHOR-BASED ALIGNMENT (錨點對齊演練 - 解決錯位標錯正字問題)**:
-   - First, find all correctly written anchor words in the handwritten text (e.g. "增強", "可以改").
-   - Lock these matching anchor words onto the corresponding positions in the Standard Answer.
-   - NEVER misalign correct characters! For example:
-     - Standard: "增強抵抗力外", Student wrote: "增強紙訊力外" -> "增強" and "力外" match perfectly! Only "抵抗" was written as "紙訊". DO NOT mark "強" as wrong!
-     - Standard: "我認為運動除了可以改善體能", Student wrote: "動除了可以改善" -> "可以改" and "動除了" match! "認為運" are 3 missing words before "動", "體能" are 2 missing words after "改善". "善" is written correctly! DO NOT add a non-existent "以" after "善"!
+1. **SENTENCE & WORD BOUNDARY ALIGNMENT (禁止跨句硬湊對齊)**:
+   - Match each student sentence STRICTLY to its corresponding Standard Answer item by item.
+   - **ENTIRE SENTENCE OMISSION (整句全漏)**: If the student completely skipped a standard sentence (e.g. Standard Item 5: "消除壓力。"), DO NOT pull words from subsequent sentences or previous sentences to fill it! Mark the entire item as GREEN OMITTED:
+     `<span class="text-emerald-600 font-bold">[漏字: 消除壓力]</span>`
 
-2. **PROTECT CORRECT CHARACTERS (正確字絕對保護)**:
-   - If the student's character literally matches the character in the standard answer at that aligned position (e.g., "強", "以", "善", "動"), YOU MUST KEEP IT AS NORMAL TEXT. NEVER wrap correct characters in red wrong-character spans!
+2. **CHARACTER-LEVEL ANCHOR MATCHING (內部錨點保護正字)**:
+   - Standard: "還可以舒展身心，"
+   - Student wrote: "還可以身伸" (skipped "舒展", wrote "身", wrote "伸" instead of "心").
+   - Correct Output for this sentence:
+     "學生寫成：還可以<span class="text-emerald-600 font-bold">[漏字: 舒展]</span>身<span class="text-rose-600 line-through font-bold">伸</span><span class="text-rose-600 font-bold">(正字: 心)</span>，"
+   - **DO NOT** mark "還", "可", "以", "身" as wrong! They match the standard answer perfectly!
 
 3. **STRICT SPAN FORMATTING**:
-   - **RED SPAN (錯字 / 別字 / 寫錯)**: Mark ONLY characters that the student ACTUALLY WROTE INCORRECTLY.
+   - **RED SPAN (錯字 / 寫錯字 / 別字)**: Mark ONLY characters that the student ACTUALLY WROTE INCORRECTLY.
      Format: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正字)</span>
-   - **GREEN SPAN (漏字 / 遺漏)**: Mark any standard characters that the student COMPLETELY SKIPPED / OMITTED.
+   - **GREEN SPAN (漏字 / 未寫)**: Mark any standard characters that the student COMPLETELY SKIPPED.
      Format: <span class="text-emerald-600 font-bold">[漏字: 遺漏字詞]</span>
 
 4. **JSON OUTPUT FORMAT**:
    Return ONLY a valid JSON object (no markdown code blocks, no extra commentary):
    {
-     "scoreSummary": "得分總覽 (例：75 分 — 發現 2 個錯字、5 個漏字)",
+     "scoreSummary": "得分總覽 (例：65 分 — 發現 3 個錯字、8 個漏字)",
      "htmlDetails": "HTML string containing breakdown by sentence"
    }
 
@@ -1165,7 +1167,7 @@ CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
                         contents: [{
                             role: "user",
                             parts: [
-                                { text: "Perform anchor-based alignment on the handwritten dictation. Keep correct words (強, 以, 善) untouched. Highlight actual wrong characters in RED and skipped words (認, 為, 運, 體, 能) in GREEN. Return valid JSON only." },
+                                { text: "Perform high-precision anchor alignment. For item 4 '還可以舒展身心', student wrote '還可以身伸' -> '還可以' is correct, '舒展' is missing (GREEN), '身' is correct, '伸' is wrong for '心' (RED). Item 5 '消除壓力' is 100% missing (GREEN). Return valid JSON only." },
                                 { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                             ]
                         }],
