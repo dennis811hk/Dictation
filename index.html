@@ -1118,37 +1118,46 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are a strict, ultra-precise primary school homework grader in Hong Kong. Your task is to transcribe and grade a student's handwritten dictation homework.
+            const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong.
+Your task is to transcribe and grade a student's handwritten homework photo against standard answers.
 
 STANDARD ANSWERS (Expected correct content):
 ${standardAnswersJSON}
 
-CRITICAL MANDATORY INSTRUCTIONS FOR TRANSCRIBING & GRADING:
+CRITICAL RULES FOR CHINESE HANDWRITING & OMISSION ALIGNMENT (極嚴格序列對齊與漏字偵測規則)：
 
-1. **LITERAL, UNCORRECTED TRANSCRIPTION (如實逐字識別，絕對禁止自動糾錯)**:
-   - Inspect every handwritten character/word carefully.
-   - **TRANSCRIBE EXACTLY WHAT IS WRITTEN**: Even if it is a wrong character, typo, or gibberish, transcribe that exact wrong text.
-   - **DO NOT AUTOCORRECT**: If standard is "小鳥在樹上唱歌" and student wrote "小鳥在木上唱哥", transcribe as "小鳥在木上唱哥". Never auto-fix.
+1. **LITERAL TRANSCRIPTION & NO AUTOCORRECT (如實逐字識別，絕不自動糾錯)**:
+   - Transcribe every single character or word exactly as written in the photo.
+   - Do not fix typos, do not change wrong characters to correct ones.
 
-2. **CHARACTER-BY-CHARACTER / WORD-BY-WORD COMPARISON**:
-   - Compare literal transcription against Standard Answer.
-   - **RED COLOR (錯字 / 錯寫 / 多字)**: Wrap wrong/misspelled characters in RED styling:
-     <span class="text-rose-600 line-through font-bold">寫錯字</span><span class="text-rose-600 font-bold">(正字: 應寫字)</span>
-   - **GREEN COLOR (漏字 / 未寫)**: Wrap omitted characters from standard answer in GREEN styling:
-     <span class="text-emerald-600 font-bold">[漏字: 應寫字]</span>
+2. **SEQUENCE ALIGNMENT FOR OMISSIONS (對齊與漏字優先原則 - 解決連續漏字問題)**:
+   - Carefully align the student's handwritten text with the Standard Answer line by line / character by character.
+   - **CRITICAL OMISSION DETECTION**: If standard text contains missing words (e.g. Standard: "我認為運動除了可以改善體能", Student wrote: "動除了可以改善"), recognize that:
+     * "認為運" (3 characters) are completely OMITTED before "動".
+     * "體能" (2 characters) are completely OMITTED after "改善".
+   - DO NOT misalign "動" to match "認" and label it as wrong! You MUST align matching characters and label skipped characters as **GREEN OMISSIONS**:
+     <span class="text-emerald-600 font-bold">[漏字: 認為運]</span>
+     <span class="text-emerald-600 font-bold">[漏字: 體能]</span>
 
-3. **JSON OUTPUT FORMAT**:
-   Return ONLY a valid JSON object (no markdown formatting, no extra text):
+3. **MARKING COLORS**:
+   - **RED COLOR (錯字 / 別字 / 誤寫)**: Only mark characters that were ACTUALLY WRITTEN INCORRECTLY by the student.
+     Format: <span class="text-rose-600 line-through font-bold">寫錯字</span><span class="text-rose-600 font-bold">(正字: 應寫字)</span>
+     *Note*: Do NOT mark correctly written Chinese characters (like "善" or "動") as wrong if they match the standard text!
+   - **GREEN COLOR (漏字 / 遺漏)**: Mark any character/word from the standard answer that the student SKIPPED or forgot to write.
+     Format: <span class="text-emerald-600 font-bold">[漏字: 遺漏的字詞]</span>
+
+4. **JSON OUTPUT FORMAT**:
+   Return ONLY a valid JSON object (no markdown, no extra text):
    {
-     "scoreSummary": "得分總覽 (例：70 分 — 發現 2 個錯字、1 個漏字)",
-     "htmlDetails": "HTML content string containing individual sentence breakdown"
+     "scoreSummary": "得分總覽 (例：65 分 — 發現 2 個錯字、5 個漏字)",
+     "htmlDetails": "HTML string containing sentence-by-sentence analysis"
    }
 
-   Each item inside "htmlDetails" must follow this HTML:
+   Format for htmlDetails:
    <div class="mb-3 pb-3 border-b border-slate-100">
      <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
      <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
-     <div class="text-slate-600 leading-relaxed">學生寫成：[Literal transcription with RED/GREEN highlights]</div>
+     <div class="text-slate-600 leading-relaxed">學生寫成：[Detailed sentence with RED wrong words and GREEN missing words]</div>
    </div>`;
 
             let attempts = 3;
@@ -1164,7 +1173,7 @@ CRITICAL MANDATORY INSTRUCTIONS FOR TRANSCRIBING & GRADING:
                         contents: [{
                             role: "user",
                             parts: [
-                                { text: "Perform a literal, uncorrected transcription of the student's handwritten work in the photo. Compare it strictly character-by-character against the standard answers. Highlight wrong characters in RED and missing characters in GREEN. Return valid JSON only." },
+                                { text: "Grade the handwritten homework photo. Align sequence carefully to catch all omitted words (like 認為運, 體能) and highlight missing words in GREEN, wrong characters in RED. Return valid JSON only." },
                                 { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                             ]
                         }],
