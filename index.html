@@ -357,7 +357,6 @@
         const inputWords = document.getElementById('input-words');
         const helperDesc = document.getElementById('helper-desc');
         const dynamicModeIndicator = document.getElementById('dynamic-mode-indicator');
-        const langAutoBadge = document.getElementById('lang-auto-badge');
 
         const btnModeEn = document.getElementById('btn-mode-en');
         const btnModeZh = document.getElementById('btn-mode-zh');
@@ -435,6 +434,96 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
             checkInputLanguageAndSegment();
+        });
+
+        // ===== 通用對話框 =====
+        function showAlert(msg) {
+            modalMessage.innerText = msg;
+            customModal.classList.remove('hidden');
+        }
+        modalClose.addEventListener('click', () => customModal.classList.add('hidden'));
+        customModal.addEventListener('click', (e) => {
+            if (e.target === customModal) customModal.classList.add('hidden');
+        });
+
+        // ===== 儲存機制 =====
+        function loadSavedLists() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveListsToStorage(lists) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+        }
+
+        function renderSavedLists() {
+            const lists = loadSavedLists();
+            if (lists.length === 0) {
+                savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
+                return;
+            }
+
+            savedListsContainer.innerHTML = '';
+            lists.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
+
+                const titleContainer = document.createElement('div');
+                titleContainer.className = "flex items-center space-x-2 flex-1 mr-2 cursor-pointer truncate";
+
+                const hasChinese = /[\u4e00-\u9fa5]/.test(item.content);
+                const badge = document.createElement('span');
+                badge.className = "text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 " + (hasChinese ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700');
+                badge.innerText = hasChinese ? '中文粵語' : '英文';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = "text-xs font-medium text-slate-700 truncate";
+                titleSpan.innerText = item.title;
+
+                titleContainer.appendChild(badge);
+                titleContainer.appendChild(titleSpan);
+
+                titleContainer.addEventListener('click', () => {
+                    inputWords.value = item.content;
+                    checkInputLanguageAndSegment();
+                    showAlert("已成功載入：「" + item.title + "」");
+                });
+
+                const btnDel = document.createElement('button');
+                btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
+                btnDel.innerHTML = "✕";
+                btnDel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    let currentLists = loadSavedLists();
+                    currentLists.splice(index, 1);
+                    saveListsToStorage(currentLists);
+                    renderSavedLists();
+                });
+
+                div.appendChild(titleContainer);
+                div.appendChild(btnDel);
+                savedListsContainer.appendChild(div);
+            });
+        }
+
+        btnSaveCurrent.addEventListener('click', () => {
+            const text = inputWords.value.trim();
+            if (!text) return showAlert("沒有內容可供儲存！");
+            const firstLine = text.split('\n')[0].trim();
+            const defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
+            let titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
+            if (!titleName) return;
+
+            let lists = loadSavedLists();
+            lists.unshift({ id: Date.now(), title: titleName.trim(), content: text });
+            if (lists.length > 20) lists.pop();
+            saveListsToStorage(lists);
+            renderSavedLists();
+            showAlert("「" + titleName + "」已成功儲存！");
         });
 
         // ===== 手動語言切換按鈕事件 =====
@@ -541,93 +630,6 @@
             segmentToolbar.classList.add('hidden');
             checkInputLanguageAndSegment();
             showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
-        });
-
-        function showAlert(msg) {
-            modalMessage.innerText = msg;
-            customModal.classList.remove('hidden');
-        }
-        modalClose.addEventListener('click', () => customModal.classList.add('hidden'));
-        customModal.addEventListener('click', (e) => {
-            if (e.target === customModal) customModal.classList.add('hidden');
-        });
-
-        function loadSavedLists() {
-            try {
-                const data = localStorage.getItem(STORAGE_KEY);
-                return data ? JSON.parse(data) : [];
-            } catch (e) {
-                return [];
-            }
-        }
-        function saveListsToStorage(lists) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
-        }
-
-        function renderSavedLists() {
-            const lists = loadSavedLists();
-            if (lists.length === 0) {
-                savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
-                return;
-            }
-
-            savedListsContainer.innerHTML = '';
-            lists.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between bg-white border border-slate-200/80 p-2 rounded-lg hover:border-blue-300 transition shadow-2xs";
-
-                const titleContainer = document.createElement('div');
-                titleContainer.className = "flex items-center space-x-2 flex-1 mr-2 cursor-pointer truncate";
-
-                const hasChinese = /[\u4e00-\u9fa5]/.test(item.content);
-                const badge = document.createElement('span');
-                badge.className = "text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 " + (hasChinese ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700');
-                badge.innerText = hasChinese ? '中文粵語' : '英文';
-
-                const titleSpan = document.createElement('span');
-                titleSpan.className = "text-xs font-medium text-slate-700 truncate";
-                titleSpan.innerText = item.title;
-
-                titleContainer.appendChild(badge);
-                titleContainer.appendChild(titleSpan);
-
-                titleContainer.addEventListener('click', () => {
-                    inputWords.value = item.content;
-                    checkInputLanguageAndSegment();
-                    showAlert("已成功載入：「" + item.title + "」");
-                });
-
-                const btnDel = document.createElement('button');
-                btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
-                btnDel.innerHTML = "✕";
-                btnDel.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    let currentLists = loadSavedLists();
-                    currentLists.splice(index, 1);
-                    saveListsToStorage(currentLists);
-                    renderSavedLists();
-                });
-
-                div.appendChild(titleContainer);
-                div.appendChild(btnDel);
-                savedListsContainer.appendChild(div);
-            });
-        }
-
-        btnSaveCurrent.addEventListener('click', () => {
-            const text = inputWords.value.trim();
-            if (!text) return showAlert("沒有內容可供儲存！");
-            const firstLine = text.split('\n')[0].trim();
-            const defaultTitle = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : (firstLine || '未命名默書');
-            let titleName = prompt("請輸入此篇默書的標題名稱：", defaultTitle);
-            if (!titleName) return;
-
-            let lists = loadSavedLists();
-            lists.unshift({ id: Date.now(), title: titleName.trim(), content: text });
-            if (lists.length > 20) lists.pop();
-            saveListsToStorage(lists);
-            renderSavedLists();
-            showAlert("「" + titleName + "」已成功儲存！");
         });
 
         let isAllSelected = false;
