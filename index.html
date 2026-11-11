@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - 雙語智能版</title>
+    <title>自動默書小幫手 - 雙語智能版 (Gemini 3.8 Flash)</title>
 
     <!-- PWA 必要：載入 Manifest 檔案 -->
     <link rel="manifest" href="/manifest.json">
@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Gemini 3.5 Flash 專用版</span>
+        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Gemini 3.8 Flash 專用版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -66,7 +66,7 @@
 
             <div class="space-y-1">
                 <div class="flex items-center justify-between">
-                    <p id="helper-desc" class="text-xs text-slate-500">請拍攝或上傳課本相片，Gemini 3.5 Flash 將自動提取印刷課文。</p>
+                    <p id="helper-desc" class="text-xs text-slate-500">請拍攝或上傳課本相片，Gemini 3.8 Flash 將自動提取印刷課文。</p>
                     <div class="flex space-x-1.5">
                         <button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
                         <button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
@@ -129,7 +129,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
-                    <span id="ocr-status-text" class="text-xs font-semibold text-blue-700">Gemini 3.5 Flash 正在智慧解析圖片文字...</span>
+                    <span id="ocr-status-text" class="text-xs font-semibold text-blue-700">Gemini 3.8 Flash 正在智慧解析圖片文字...</span>
                 </div>
                 <p id="ocr-status-detail" class="text-[10px] text-blue-600 ml-6 leading-relaxed"></p>
                 <div id="ocr-retry-container" class="hidden ml-6 mt-2">
@@ -243,7 +243,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Gemini 3.5 Flash 拍照紅筆批改與比對</span>
+                    <span>Gemini 3.8 Flash 拍照紅筆批改與比對</span>
                 </div>
                 <div class="bg-white p-2.5 rounded-lg border border-indigo-100 text-[11px] text-slate-600 space-y-1">
                     <p class="font-semibold text-indigo-800">圖例與說明：</p>
@@ -272,7 +272,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">Gemini 3.5 Flash 正在逐字精準批改中...</span>
+                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">Gemini 3.8 Flash 正在逐字精準批改中...</span>
                     </div>
                     <p id="grading-status-detail" class="text-[10px] text-indigo-600 ml-6 leading-relaxed"></p>
                     <div id="grading-retry-container" class="hidden ml-6 mt-2">
@@ -341,10 +341,10 @@
             });
         }
 
-        // 強制固定使用專用高精度模型 gemini-3.5-flash
-        const GEMINI_MODELS = ["gemini-3.5-flash"];
+        // 強制固定使用最新高精度模型 gemini-3.8-flash
+        const GEMINI_MODELS = ["gemini-3.8-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v11_09';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v11_10';
 
         const setupScreen = document.getElementById('setup-screen');
         const dictationScreen = document.getElementById('dictation-screen');
@@ -799,7 +799,7 @@
                 return { type: "invalid_key", title: "API 授權無效", detail: "請確認 API Key 設定。" };
             }
             if (status === 429) {
-                return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度限制，請稍候再試。" };
+                return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度限制，請稍候 30 秒至 1 分鐘再重試。" };
             }
             return { type: "server_error", title: "伺服器錯誤", detail: "伺服器暫時無法回應（" + status + "）。" };
         }
@@ -832,7 +832,7 @@
             targetCanvas.height = sh;
             tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, sw, sh);
 
-            showOcrStatus("正在分析中英文字體...", "Gemini 3.5 Flash 智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
+            showOcrStatus("正在分析中英文字體...", "Gemini 3.8 Flash 智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
 
             targetCanvas.toBlob(async (blob) => {
                 try {
@@ -860,7 +860,7 @@
 
         btnOcrRetry.addEventListener('click', async () => {
             if (!lastOcrContext) return;
-            showOcrStatus("正在重試...", "重新發送圖片至 Gemini 3.5 Flash 模型辨識", false);
+            showOcrStatus("正在重試...", "重新發送圖片至 Gemini 3.8 Flash 模型辨識", false);
             try {
                 const result = await callGeminiOCR(lastOcrContext.base64Data);
                 if (result.success) {
@@ -878,14 +878,14 @@
         });
 
         async function callGeminiOCR(base64Data) {
-            const systemPrompt = `You are an expert bilingual teacher for primary students in Hong Kong.
+            const systemPrompt = `You are an expert bilingual teacher for primary students in Hong Kong using Gemini 3.8 Flash vision.
 Extract dictation text strictly ignoring headings, handwritten notes, and exercises. Return clean numbered items only.`;
 
             let attempts = 3;
             let lastError = null;
 
             for (let attempt = 1; attempt <= attempts; attempt++) {
-                const model = "gemini-3.5-flash";
+                const model = "gemini-3.8-flash";
                 const apiUrl = "/api/chat";
 
                 const body = JSON.stringify({
@@ -972,10 +972,10 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
             inputWords.value = Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
             checkInputLanguageAndSegment();
-            showAlert("Gemini 3.5 Flash 解析完成！已加入 " + newLines.length + " 個正文項目。");
+            showAlert("Gemini 3.8 Flash 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // AI 批改與超嚴格錨點對齊邏輯（獨佔 gemini-3.5-flash）
+        // AI 批改與超嚴格錨點對齊邏輯（獨佔 gemini-3.8-flash）
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -996,7 +996,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("Gemini 3.5 Flash 正在進行高精度手寫校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一對齊...", false);
+            showGradingStatus("Gemini 3.8 Flash 正在進行高精度手寫校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一對齊...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -1010,7 +1010,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
                     gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
                     gradingResultContainer.classList.remove('hidden');
-                    showAlert("Gemini 3.5 Flash 紅筆批改完成！已精準標出錯別字與漏字。");
+                    showAlert("Gemini 3.8 Flash 紅筆批改完成！已精準標出錯別字與漏字。");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
@@ -1022,7 +1022,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
 
         btnGradingRetry.addEventListener('click', async () => {
             if (!lastGradingContext) return;
-            showGradingStatus("正在重試批改...", "發送至 Gemini 3.5 Flash 重新進行精準批改", false);
+            showGradingStatus("正在重試批改...", "發送至 Gemini 3.8 Flash 重新進行精準批改", false);
             try {
                 const result = await callGeminiGrading(lastGradingContext.base64Data, lastGradingContext.mimeType);
                 if (result.success) {
@@ -1030,7 +1030,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
                     gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
                     gradingResultContainer.classList.remove('hidden');
-                    showAlert("Gemini 3.5 Flash 紅筆批改完成！");
+                    showAlert("Gemini 3.8 Flash 紅筆批改完成！");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
@@ -1043,8 +1043,8 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong.
-Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors using Gemini 3.5 Flash vision capability.
+            const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong using Gemini 3.8 Flash vision and multi-step reasoning capabilities.
+Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors.
 
 STANDARD ANSWERS:
 ${standardAnswersJSON}
@@ -1072,7 +1072,7 @@ CRITICAL SEQUENCE & ANCHOR RULES:
             let lastError = null;
 
             for (let attempt = 1; attempt <= attempts; attempt++) {
-                const model = "gemini-3.5-flash";
+                const model = "gemini-3.8-flash";
                 const apiUrl = "/api/chat";
 
                 const body = JSON.stringify({
@@ -1080,7 +1080,7 @@ CRITICAL SEQUENCE & ANCHOR RULES:
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Perform high-precision anchor alignment and grading using Gemini 3.5 Flash. Return valid JSON only." },
+                            { text: "Perform high-precision anchor alignment and grading using Gemini 3.8 Flash. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
