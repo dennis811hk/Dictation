@@ -6,7 +6,7 @@
 <meta name="creative-medium" content="interactive-prototype">
 <title>自動默書小幫手 - 雙語智能版</title>
 
-<!-- PWA 必要：載入 Manifest 檔案 -->
+<!-- PWA Manifest & Meta -->
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,8 +27,8 @@ body { font-family: 'Inter', sans-serif; }
 <header class="w-full max-w-md bg-blue-600 text-white p-4 rounded-2xl shadow-md flex items-center justify-between mb-6">
 <div class="flex items-center space-x-2">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-<path d="M12 14l9-5-9-5-9 5 9 5z" />
-<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
 </svg>
 <h1 class="text-xl font-bold">自動默書小幫手</h1>
 </div>
@@ -68,8 +68,8 @@ body { font-family: 'Inter', sans-serif; }
 <div class="flex items-center justify-between">
 <p id="helper-desc" class="text-xs text-slate-500">請拍攝或上傳課本相片，Gemini 3.5 Flash 將自動提取印刷課文。</p>
 <div class="flex space-x-1.5">
-<button id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
-<button id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
+<button type="button" id="btn-select-all" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg transition">全選</button>
+<button type="button" id="btn-clear-all" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-2.5 py-1 rounded-lg transition">清除內容</button>
 </div>
 </div>
 <p class="text-[11px] text-blue-600 leading-tight">（嚴格過濾：優先提取印刷字，完全忽略手寫筆記與標題）</p>
@@ -91,8 +91,8 @@ body { font-family: 'Inter', sans-serif; }
 <!-- 拍照與相冊選擇按鈕區 -->
 <div class="grid grid-cols-2 gap-3">
 <div class="relative overflow-hidden">
-<input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-<button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
+<input type="file" id="camera-upload" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
+<button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none z-10">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -102,8 +102,8 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <div class="relative overflow-hidden">
-<input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-<button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none">
+<input type="file" id="gallery-upload" accept="image/*" multiple class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
+<button type="button" class="w-full border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/50 text-slate-700 font-medium py-3 px-2 rounded-xl transition flex items-center justify-center space-x-1.5 text-xs pointer-events-none z-10">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
 </svg>
@@ -133,7 +133,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <p id="ocr-status-detail" class="text-[10px] text-blue-600 ml-6 leading-relaxed"></p>
 <div id="ocr-retry-container" class="hidden ml-6 mt-2">
-<button id="btn-ocr-retry" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
+<button type="button" id="btn-ocr-retry" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
 </div>
 </div>
 
@@ -146,7 +146,7 @@ body { font-family: 'Inter', sans-serif; }
 </svg>
 儲存與歷史默書清單
 </span>
-<button id="btn-save-current" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1">
+<button type="button" id="btn-save-current" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center space-x-1">
 <span>儲存當前內容</span>
 </button>
 </div>
@@ -167,7 +167,7 @@ body { font-family: 'Inter', sans-serif; }
 </select>
 </div>
 
-<button id="btn-start" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2">
+<button type="button" id="btn-start" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -183,7 +183,7 @@ body { font-family: 'Inter', sans-serif; }
 <span id="progress-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">第 1 題 / 共 5 題</span>
 <span id="active-lang-badge" class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-md">🇭🇰 中文 (粵語)</span>
 </div>
-<button id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
+<button type="button" id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
 </div>
 
 <!-- 隱藏播放中文字卡片 (防止學童偷看答案) -->
@@ -193,7 +193,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <div class="flex flex-col items-center justify-center py-2 space-y-3">
-<button id="btn-play-word" class="w-24 h-24 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center transition shadow-inner">
+<button type="button" id="btn-play-word" class="w-24 h-24 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center transition shadow-inner">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
 </svg>
@@ -204,14 +204,14 @@ body { font-family: 'Inter', sans-serif; }
 <!-- 控制按鈕區 -->
 <div class="space-y-2.5 pt-2">
 <div class="flex space-x-2">
-<button id="btn-prev-sentence" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
+<button type="button" id="btn-prev-sentence" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
 </svg>
 <span>播上一題</span>
 </button>
 
-<button id="btn-next-sentence" class="flex-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-sm">
+<button type="button" id="btn-next-sentence" class="flex-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-md shadow-blue-200 flex items-center justify-center space-x-2 text-sm">
 <span id="btn-next-text">播下一題</span>
 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -219,7 +219,7 @@ body { font-family: 'Inter', sans-serif; }
 </button>
 </div>
 
-<button id="btn-fast-review" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5 text-xs">
+<button type="button" id="btn-fast-review" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5 text-xs">
 <span>⚡ 1.2x 快速播放全文複查 (檢查默寫)</span>
 </button>
 </div>
@@ -256,8 +256,8 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <div class="relative overflow-hidden">
-<input type="file" id="grading-upload" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-<button type="button" id="grading-upload-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition shadow-sm text-sm flex items-center justify-center space-x-2 pointer-events-none">
+<input type="file" id="grading-upload" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20">
+<button type="button" id="grading-upload-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition shadow-sm text-sm flex items-center justify-center space-x-2 pointer-events-none z-10">
 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 </svg>
@@ -276,7 +276,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <p id="grading-status-detail" class="text-[10px] text-indigo-600 ml-6 leading-relaxed"></p>
 <div id="grading-retry-container" class="hidden ml-6 mt-2">
-<button id="btn-grading-retry" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
+<button type="button" id="btn-grading-retry" class="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1 rounded-md transition">重試一次</button>
 </div>
 </div>
 </div>
@@ -291,11 +291,11 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <div class="flex space-x-3 pt-2">
-<button id="btn-retry-all" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 px-4 rounded-xl transition text-sm">
+<button type="button" id="btn-retry-all" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 px-4 rounded-xl transition text-sm">
 全部重默
 </button>
 </div>
-<button id="btn-restart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition text-sm">
+<button type="button" id="btn-restart" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition text-sm">
 返回首頁重新開始
 </button>
 </div>
@@ -306,7 +306,7 @@ body { font-family: 'Inter', sans-serif; }
 <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
 <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-xl text-center space-y-4">
 <p id="modal-message" class="text-sm text-slate-700 font-medium">提示訊息</p>
-<button id="modal-close" class="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm">確定</button>
+<button type="button" id="modal-close" class="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm">確定</button>
 </div>
 </div>
 
@@ -322,10 +322,10 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <p class="text-xs text-slate-500 text-center">提示：在圖片上拖曳框選出文字區域，點擊「確認裁切並辨識」即可！</p>
 <div class="flex space-x-2 pt-1">
-<button id="btn-skip-crop" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-3 rounded-xl transition">
+<button type="button" id="btn-skip-crop" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-3 rounded-xl transition">
 整張直接辨識
 </button>
-<button id="btn-confirm-crop" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 rounded-xl transition shadow-md shadow-blue-200">
+<button type="button" id="btn-confirm-crop" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 rounded-xl transition shadow-md shadow-blue-200">
 確認裁切並辨識
 </button>
 </div>
@@ -334,25 +334,20 @@ body { font-family: 'Inter', sans-serif; }
 
 <!-- 核心腳本區 -->
 <script>
-// PWA 自動註冊 Service Worker
+// 註冊 Service Worker
 if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
 navigator.serviceWorker.register('/sw.js').catch(()=>{});
 });
 }
 
-// 強制固定使用專用高精度模型 gemini-3.5-flash
-const GEMINI_MODELS = ["gemini-3.5-flash"];
-let currentGeminiModel = GEMINI_MODELS[0];
-const STORAGE_KEY = 'my_dictation_saved_lists_v11_09';
+const STORAGE_KEY = 'my_dictation_saved_lists_v11_10';
 
 const setupScreen = document.getElementById('setup-screen');
 const dictationScreen = document.getElementById('dictation-screen');
 const resultScreen = document.getElementById('result-screen');
 const inputWords = document.getElementById('input-words');
-const helperDesc = document.getElementById('helper-desc');
 const dynamicModeIndicator = document.getElementById('dynamic-mode-indicator');
-const langAutoBadge = document.getElementById('lang-auto-badge');
 
 const btnModeEn = document.getElementById('btn-mode-en');
 const btnModeZh = document.getElementById('btn-mode-zh');
@@ -405,7 +400,7 @@ const savedListsContainer = document.getElementById('saved-lists-container');
 const cropModal = document.getElementById('crop-modal');
 const cropModalTitle = document.getElementById('crop-modal-title');
 const cropCanvas = document.getElementById('crop-canvas');
-const ctxCrop = cropCanvas.getContext('2d');
+const ctxCrop = cropCanvas ? cropCanvas.getContext('2d') : null;
 const btnSkipCrop = document.getElementById('btn-skip-crop');
 const btnConfirmCrop = document.getElementById('btn-confirm-crop');
 
@@ -430,10 +425,14 @@ function showAlert(msg) {
 modalMessage.innerText = msg;
 customModal.classList.remove('hidden');
 }
+if (modalClose) {
 modalClose.addEventListener('click', () => customModal.classList.add('hidden'));
+}
+if (customModal) {
 customModal.addEventListener('click', (e) => {
 if (e.target === customModal) customModal.classList.add('hidden');
 });
+}
 
 // 儲存機制
 function loadSavedLists() {
@@ -449,6 +448,7 @@ localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
 }
 
 function renderSavedLists() {
+if (!savedListsContainer) return;
 const lists = loadSavedLists();
 if (lists.length === 0) {
 savedListsContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未儲存任何默書內容</p>';
@@ -476,12 +476,15 @@ titleContainer.appendChild(badge);
 titleContainer.appendChild(titleSpan);
 
 titleContainer.addEventListener('click', () => {
+if (inputWords) {
 inputWords.value = item.content;
 checkInputLanguageAndSegment();
+}
 showAlert("已成功載入：「" + item.title + "」");
 });
 
 const btnDel = document.createElement('button');
+btnDel.type = "button";
 btnDel.className = "text-slate-400 hover:text-rose-500 text-xs px-1.5 py-0.5 rounded transition";
 btnDel.innerHTML = "✕";
 btnDel.addEventListener('click', (e) => {
@@ -498,7 +501,9 @@ savedListsContainer.appendChild(div);
 });
 }
 
+if (btnSaveCurrent) {
 btnSaveCurrent.addEventListener('click', () => {
+if (!inputWords) return;
 const text = inputWords.value.trim();
 if (!text) return showAlert("沒有內容可供儲存！");
 const firstLine = text.split('\n')[0].trim();
@@ -513,30 +518,37 @@ saveListsToStorage(lists);
 renderSavedLists();
 showAlert("「" + titleName + "」已成功儲存！");
 });
+}
 
-// 初始化與科目按鈕
+// 初始化
 window.addEventListener('DOMContentLoaded', () => {
 renderSavedLists();
 checkInputLanguageAndSegment();
 });
 
+if (btnModeEn) {
 btnModeEn.addEventListener('click', () => {
 selectedLanguageOverride = 'en';
 btnModeEn.className = "bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm";
 btnModeZh.className = "bg-white border-2 border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition";
 checkInputLanguageAndSegment();
 });
+}
 
+if (btnModeZh) {
 btnModeZh.addEventListener('click', () => {
 selectedLanguageOverride = 'zh';
 btnModeZh.className = "bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm";
 btnModeEn.className = "bg-white border-2 border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition";
 checkInputLanguageAndSegment();
 });
+}
 
+if (inputWords) {
 inputWords.addEventListener('input', () => {
 checkInputLanguageAndSegment();
 });
+}
 
 function detectLanguageMode(text) {
 if (selectedLanguageOverride === 'en') return 'english';
@@ -551,6 +563,7 @@ return 'cantonese';
 }
 
 function checkInputLanguageAndSegment() {
+if (!inputWords || !dynamicModeIndicator) return;
 const text = inputWords.value.trim();
 const mode = detectLanguageMode(text);
 
@@ -579,6 +592,7 @@ directGradingContainer.classList.add('opacity-50', 'pointer-events-none');
 }
 }
 
+if (btnDirectGrading) {
 btnDirectGrading.addEventListener('click', () => {
 const rawText = inputWords.value.trim();
 if (!rawText) return showAlert("請先在選字欄中輸入或選擇默書內容！");
@@ -595,7 +609,9 @@ hideGradingStatus();
 resultSummary.innerText = "直接進行手寫作業紅筆批改（共 " + originalWords.length + " 題）";
 showAlert("已將選字欄內容設為標準答案，請直接拍攝或上傳學童手寫作業！");
 });
+}
 
+if (btnAutoSegment) {
 btnAutoSegment.addEventListener('click', () => {
 let text = inputWords.value.trim();
 if (!text) return;
@@ -621,9 +637,10 @@ segmentToolbar.classList.add('hidden');
 checkInputLanguageAndSegment();
 showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
 });
+}
 
-// 全選與清除
 let isAllSelected = false;
+if (btnSelectAll) {
 btnSelectAll.addEventListener('click', () => {
 inputWords.focus();
 if (!isAllSelected) {
@@ -636,17 +653,20 @@ btnSelectAll.innerText = "全選";
 isAllSelected = false;
 }
 });
+}
 
+if (btnClearAll) {
 btnClearAll.addEventListener('click', () => {
 if (inputWords.value.trim() === '') return;
 if (confirm("確定要清除全部文字嗎？")) {
 inputWords.value = '';
 isAllSelected = false;
-btnSelectAll.innerText = "全選";
+if (btnSelectAll) btnSelectAll.innerText = "全選";
 segmentToolbar.classList.add('hidden');
 checkInputLanguageAndSegment();
 }
 });
+}
 
 // 語音朗讀
 function speakText(text, overrideSpeed) {
@@ -658,7 +678,6 @@ const rate = overrideSpeed || (parseFloat(speechSpeedSelect.value) || 0.5);
 utterance.rate = rate;
 
 const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-
 if (selectedLanguageOverride === 'zh' || (selectedLanguageOverride !== 'en' && hasChinese)) {
 utterance.lang = 'zh-HK';
 } else {
@@ -678,9 +697,9 @@ if ('speechSynthesis' in window) {
 window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
-// 圖片上傳與裁切
-cameraUpload.addEventListener('change', handleImageUpload);
-galleryUpload.addEventListener('change', handleImageUpload);
+// 相片上傳與裁切事件綁定
+if (cameraUpload) cameraUpload.addEventListener('change', handleImageUpload);
+if (galleryUpload) galleryUpload.addEventListener('change', handleImageUpload);
 
 function handleImageUpload(e) {
 const files = e.target.files;
@@ -700,8 +719,8 @@ reindexAndAppendText(accumulatedOCRTextResults.join('\n'));
 return;
 }
 const file = pendingFiles[currentFileIndex];
-cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
-cropModal.classList.remove('hidden');
+if (cropModalTitle) cropModalTitle.innerText = "調整裁切範圍（第 " + (currentFileIndex + 1) + " 張 / 共 " + pendingFiles.length + " 張）";
+if (cropModal) cropModal.classList.remove('hidden');
 
 const reader = new FileReader();
 reader.onload = function(event) {
@@ -717,7 +736,7 @@ reader.readAsDataURL(file);
 }
 
 function drawCropCanvas() {
-if (!currentImgObj) return;
+if (!currentImgObj || !cropCanvas || !ctxCrop) return;
 cropCanvas.width = currentImgObj.width;
 cropCanvas.height = currentImgObj.height;
 ctxCrop.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
@@ -738,6 +757,7 @@ ctxCrop.strokeRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
 }
 
 function getCanvasCoords(e) {
+if (!cropCanvas) return { x: 0, y: 0 };
 const rect = cropCanvas.getBoundingClientRect();
 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -753,6 +773,7 @@ const coords = getCanvasCoords(e);
 startX = coords.x; startY = coords.y;
 cropRect = { x: startX, y: startY, width: 0, height: 0 };
 };
+
 const doDrag = (e) => {
 if (!isDragging) return;
 const coords = getCanvasCoords(e);
@@ -764,6 +785,7 @@ cropRect = { x: rx, y: ry, width: w, height: h };
 drawCropCanvas();
 if(e.type === 'touchmove') e.preventDefault();
 };
+
 const endDrag = () => {
 isDragging = false;
 if (cropRect.width < 20 || cropRect.height < 20) {
@@ -772,31 +794,37 @@ drawCropCanvas();
 }
 };
 
+if (cropCanvas) {
 cropCanvas.addEventListener('mousedown', startDrag);
 cropCanvas.addEventListener('mousemove', doDrag);
 window.addEventListener('mouseup', endDrag);
 cropCanvas.addEventListener('touchstart', startDrag, {passive: false});
 cropCanvas.addEventListener('touchmove', doDrag, {passive: false});
 cropCanvas.addEventListener('touchend', endDrag);
+}
 
+if (btnConfirmCrop) {
 btnConfirmCrop.addEventListener('click', () => {
 cropModal.classList.add('hidden');
 executeGeminiVision(false);
 });
+}
 
+if (btnSkipCrop) {
 btnSkipCrop.addEventListener('click', () => {
 cropModal.classList.add('hidden');
 if (currentImgObj) cropRect = { x: 0, y: 0, width: currentImgObj.width, height: currentImgObj.height };
 executeGeminiVision(true);
 });
+}
 
-function classifyGeminiError(response, errorData) {
+function classifyGeminiError(response) {
 if (!response) {
 return { type: "network", title: "網路連線失敗", detail: "無法連線到伺服器。" };
 }
 const status = response.status;
 if (status === 400 || status === 401 || status === 403) {
-return { type: "invalid_key", title: "API 授權無效", detail: "請確認 API Key 設定。" };
+return { type: "invalid_key", title: "API 授權無效", detail: "請確認 API 設定。" };
 }
 if (status === 429) {
 return { type: "rate_limit", title: "請求過於頻繁", detail: "已達到免費額度限制，請稍候再試。" };
@@ -805,6 +833,7 @@ return { type: "server_error", title: "伺服器錯誤", detail: "伺服器暫�
 }
 
 function showOcrStatus(title, detail, showRetry) {
+if (!ocrStatusContainer) return;
 ocrStatusContainer.classList.remove('hidden');
 ocrStatusText.innerText = title;
 ocrStatusDetail.innerText = detail || "";
@@ -813,8 +842,8 @@ else ocrRetryContainer.classList.add('hidden');
 }
 
 function hideOcrStatus() {
-ocrStatusContainer.classList.add('hidden');
-ocrRetryContainer.classList.add('hidden');
+if (ocrStatusContainer) ocrStatusContainer.classList.add('hidden');
+if (ocrRetryContainer) ocrRetryContainer.classList.add('hidden');
 }
 
 async function executeGeminiVision(isSkipped) {
@@ -832,7 +861,7 @@ targetCanvas.width = sw;
 targetCanvas.height = sh;
 tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, sw, sh);
 
-showOcrStatus("正在分析中英文字體...", "Gemini 3.5 Flash 智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
+showOcrStatus("正在分析中英文字體...", "Gemini 3.5 Flash 智慧提取課文正文...", false);
 
 targetCanvas.toBlob(async (blob) => {
 try {
@@ -852,12 +881,13 @@ processNextFileForCrop();
 showOcrStatus("辨識失敗：" + result.error.title, result.error.detail, true);
 }
 } catch (err) {
-const classified = classifyGeminiError(null, null);
+const classified = classifyGeminiError(null);
 showOcrStatus(classified.title, classified.detail, true);
 }
 }, 'image/jpeg', 0.85);
 }
 
+if (btnOcrRetry) {
 btnOcrRetry.addEventListener('click', async () => {
 if (!lastOcrContext) return;
 showOcrStatus("正在重試...", "重新發送圖片至 Gemini 3.5 Flash 模型辨識", false);
@@ -872,13 +902,14 @@ processNextFileForCrop();
 showOcrStatus("重試仍失敗：" + result.error.title, result.error.detail, true);
 }
 } catch (err) {
-const classified = classifyGeminiError(null, null);
+const classified = classifyGeminiError(null);
 showOcrStatus(classified.title, classified.detail, true);
 }
 });
+}
 
 async function callGeminiOCR(base64Data) {
-const systemPrompt = You are an expert bilingual teacher for primary students in Hong Kong. Extract dictation text strictly ignoring headings, handwritten notes, and exercises. Return clean numbered items only.;
+const systemPrompt = "You are an expert bilingual teacher for primary students in Hong Kong. Extract dictation text strictly ignoring headings, handwritten notes, and exercises. Return clean numbered items only.";
 
 let attempts = 3;
 let lastError = null;
@@ -905,7 +936,7 @@ if (response.ok) {
 const apiResult = await response.json();
 const candidate = apiResult.candidates && apiResult.candidates[0];
 if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-let aiFinalText = candidate.content.parts[0].text.trim().replace(/^\w*\s*/i, '').replace(/\s*$`/, '');
+let aiFinalText = candidate.content.parts[0].text.trim();
 if (aiFinalText) return { success: true, text: aiFinalText };
 }
 } else {
@@ -919,16 +950,17 @@ lastError = { response: null, data: null };
 
 if (attempt < attempts) await new Promise(r => setTimeout(r, 2000));
 }
-return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
+return { success: false, error: classifyGeminiError(lastError?.response) };
 }
 
 function strictDeduplicateAndSort(text) {
 let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 let items = [];
 lines.forEach(line => {
-const match = line.match(/^([0-9]+)[.)]\s*(.*)`$/);
+const match = line.match(/^([0-9]+)[.)]\s*(.*)$/);
 if (match) items.push({ num: parseInt(match[1], 10), content: match[2].trim() });
 else if (items.length > 0) items[items.length - 1].content += " " + line;
+else items.push({ num: items.length + 1, content: line });
 });
 let uniqueMap = new Map();
 items.forEach(item => {
@@ -974,8 +1006,8 @@ checkInputLanguageAndSegment();
 showAlert("Gemini 3.5 Flash 解析完成！已加入 " + newLines.length + " 個正文項目。");
 }
 
-// AI 批改與超嚴格錨點對齊邏輯（獨佔 gemini-3.5-flash）
 function showGradingStatus(title, detail, showRetry) {
+if (!gradingStatusContainer) return;
 gradingStatusContainer.classList.remove('hidden');
 gradingStatusText.innerText = title;
 gradingStatusDetail.innerText = detail || "";
@@ -984,10 +1016,11 @@ else gradingRetryContainer.classList.add('hidden');
 }
 
 function hideGradingStatus() {
-gradingStatusContainer.classList.add('hidden');
-gradingRetryContainer.classList.add('hidden');
+if (gradingStatusContainer) gradingStatusContainer.classList.add('hidden');
+if (gradingRetryContainer) gradingRetryContainer.classList.add('hidden');
 }
 
+if (gradingUpload) {
 gradingUpload.addEventListener('change', async (e) => {
 const file = e.target.files[0];
 if (!file) return;
@@ -1009,16 +1042,18 @@ hideGradingStatus();
 gradingScore.innerText = result.data.scoreSummary || "批改完成";
 gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
 gradingResultContainer.classList.remove('hidden');
-showAlert("Gemini 3.5 Flash 紅筆批改完成！已精準標出錯別字與漏字。");
+showAlert("Gemini 3.5 Flash 紅筆批改完成！");
 } else {
 showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
 }
 } catch (err) {
-const classified = classifyGeminiError(null, null);
+const classified = classifyGeminiError(null);
 showGradingStatus(classified.title, classified.detail, true);
 }
 });
+}
 
+if (btnGradingRetry) {
 btnGradingRetry.addEventListener('click', async () => {
 if (!lastGradingContext) return;
 showGradingStatus("正在重試批改...", "發送至 Gemini 3.5 Flash 重新進行精準批改", false);
@@ -1034,10 +1069,11 @@ showAlert("Gemini 3.5 Flash 紅筆批改完成！");
 showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
 }
 } catch (err) {
-const classified = classifyGeminiError(null, null);
+const classified = classifyGeminiError(null);
 showGradingStatus(classified.title, classified.detail, true);
 }
 });
+}
 
 async function callGeminiGrading(base64Data, mimeType) {
 const standardAnswersJSON = JSON.stringify(originalWords);
@@ -1046,24 +1082,15 @@ const systemPrompt = `You are an expert Chinese & English dictation grader for p
 Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors using Gemini 3.5 Flash vision capability.
 
 STANDARD ANSWERS:
-$`{standardAnswersJSON}
+` + standardAnswersJSON + `
 
 CRITICAL SEQUENCE & ANCHOR RULES:
-1. STRICT ANCHOR ALIGNMENT: 
-◦ First match words written correctly as anchor points (e.g. "還可以", "身").
-◦ Do NOT shift alignment or mark correct words ("還", "可", "以", "身") as wrong.
-2. OMISSION HIGHLIGHTING: 
-◦ For skipped characters within a sentence (e.g., student wrote "還可以身伸" for "還可以舒展身心"), correctly tag omitted words in GREEN:
-"學生寫成：還可以<span class="text-emerald-600 font-bold">[漏字: 舒展]</span>身<span class="text-rose-600 line-through font-bold">伸</span><span class="text-rose-600 font-bold">(正字: 心)</span>，"
-3. ENTIRE SENTENCE OMISSION: 
-◦ If an entire sentence is missing (e.g. Standard Item 5: "消除壓力。"), tag the full sentence in GREEN:
-<span class="text-emerald-600 font-bold">[漏字: 消除壓力]</span>
-◦ Do NOT pull words from subsequent sentences to fill the gap.
-4. RED SPAN FOR WRONG CHARACTERS:
-<span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正字)</span>
-5. OUTPUT FORMAT: Return ONLY valid JSON:
+1. STRICT ANCHOR ALIGNMENT: Match correct words as anchor points. Do NOT shift alignment or mark correct words as wrong.
+2. OMISSION HIGHLIGHTING: Tag omitted words in GREEN: <span class="text-emerald-600 font-bold">[漏字: xxx]</span>
+3. RED SPAN FOR WRONG CHARACTERS: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正字)</span>
+4. OUTPUT FORMAT: Return ONLY valid JSON:
 {
-"scoreSummary": "得分總覽 (例：65 分 — 發現 3 個錯字、8 個漏字)",
+"scoreSummary": "得分總覽 (例：65 分 — 發現 3 個錯字)",
 "htmlDetails": "HTML string containing breakdown by sentence"
 }`;
 
@@ -1095,7 +1122,7 @@ const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type'
 if (response.ok) {
 const result = await response.json();
 const textResp = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-const cleanJson = textResp.replace(/^json\s*/i, '').replace(/^\s*/i, '').replace(/\s*````$/, '').trim();
+const cleanJson = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
 let parsed;
 try {
 parsed = JSON.parse(cleanJson);
@@ -1117,10 +1144,11 @@ if (attempt < attempts) {
 await new Promise(r => setTimeout(r, 2000));
 }
 }
-return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
+return { success: false, error: classifyGeminiError(lastError?.response) };
 }
 
 // 默書流程控制
+if (btnStart) {
 btnStart.addEventListener('click', () => {
 const rawText = inputWords.value.trim();
 if (!rawText) return showAlert("請先輸入默書詞彙或句子！");
@@ -1139,8 +1167,10 @@ hideGradingStatus();
 updateProgressAndDisplay();
 playCurrentItem();
 });
+}
 
 function updateProgressAndDisplay() {
+if (!progressIndicator) return;
 progressIndicator.innerText = "進度：第 " + (currentQueueIndex + 1) + " 段 / 共 " + dictationQueue.length + " 段";
 const currentText = dictationQueue[currentQueueIndex];
 
@@ -1173,10 +1203,9 @@ const currentText = dictationQueue[currentQueueIndex];
 setTimeout(() => speakText(currentText), 250);
 }
 
-btnPlayWord.addEventListener('click', () => {
-playCurrentItem();
-});
+if (btnPlayWord) btnPlayWord.addEventListener('click', () => playCurrentItem());
 
+if (btnPrevSentence) {
 btnPrevSentence.addEventListener('click', () => {
 if (currentQueueIndex > 0) {
 currentQueueIndex--;
@@ -1184,7 +1213,9 @@ updateProgressAndDisplay();
 playCurrentItem();
 }
 });
+}
 
+if (btnNextSentence) {
 btnNextSentence.addEventListener('click', () => {
 currentQueueIndex++;
 if (currentQueueIndex < dictationQueue.length) {
@@ -1196,19 +1227,25 @@ resultScreen.classList.remove('hidden');
 resultSummary.innerText = "已完成全部 " + originalWords.length + " 段默書！直接進行手寫作業紅筆批改。";
 }
 });
+}
 
+if (btnFastReview) {
 btnFastReview.addEventListener('click', () => {
 const fullText = dictationQueue.join('。 ');
 showAlert("⚡ 正以 1.2x 速度連貫朗讀全文，請學童檢查默寫本！");
 speakText(fullText, 1.2);
 });
+}
 
+if (btnBackSetup) {
 btnBackSetup.addEventListener('click', () => {
 window.speechSynthesis.cancel();
 dictationScreen.classList.add('hidden');
 setupScreen.classList.remove('hidden');
 });
+}
 
+if (btnRetryAll) {
 btnRetryAll.addEventListener('click', () => {
 currentQueueIndex = 0;
 resultScreen.classList.add('hidden');
@@ -1218,12 +1255,15 @@ hideGradingStatus();
 updateProgressAndDisplay();
 playCurrentItem();
 });
+}
 
+if (btnRestart) {
 btnRestart.addEventListener('click', () => {
 window.speechSynthesis.cancel();
 resultScreen.classList.add('hidden');
 setupScreen.classList.remove('hidden');
 });
+}
 </script>
 </body>
 </html>
