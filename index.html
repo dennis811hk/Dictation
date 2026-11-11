@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - 雙語智能旗艦版</title>
+    <title>自動默書小幫手 - 雙語智能版</title>
 
     <!-- PWA 必要：載入 Manifest 檔案 -->
     <link rel="manifest" href="/manifest.json">
@@ -13,8 +13,8 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://miaoda.feishu.cn">
-    <link href="https://miaoda.feishu.cn/fonts/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.2s ease-out; }
@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">雙語超精準批改版</span>
+        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">中英雙語智慧版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-            <!-- 首頁直接跳轉 AI 批改頁按鈕（當輸入框有內容時顯現） -->
+            <!-- 首頁直接跳轉 AI 批改頁按鈕 -->
             <div id="direct-grading-container" class="transition-all duration-200">
                 <button type="button" id="btn-direct-grading" class="w-full bg-indigo-50 border-2 border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-bold py-3 px-4 rounded-xl transition shadow-xs flex items-center justify-center space-x-2 text-xs">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,7 +201,7 @@
                 <span class="text-xs font-medium text-slate-500">點擊喇叭即可「重播當前句」</span>
             </div>
 
-            <!-- 控制按鈕區：播上一題 / 播下一題 / 全文快速複查 -->
+            <!-- 控制按鈕區 -->
             <div class="space-y-2.5 pt-2">
                 <div class="flex space-x-2">
                     <button id="btn-prev-sentence" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 px-3 rounded-xl transition flex items-center justify-center space-x-1 text-sm">
@@ -219,7 +219,6 @@
                     </button>
                 </div>
 
-                <!-- 快速 1.2x 全文播放按鈕（播放到最後一題時自動亮起） -->
                 <button id="btn-fast-review" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5 text-xs">
                     <span>⚡ 1.2x 快速播放全文複查 (檢查默寫)</span>
                 </button>
@@ -311,19 +310,17 @@
         </div>
     </div>
 
-    <!-- 圖片裁切與預覽彈窗 -->
+    <!-- 圖片裁切彈窗 -->
     <div id="crop-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 id="crop-modal-title" class="text-sm font-bold text-slate-800">調整裁切範圍</h3>
                 <span class="text-xs text-slate-400">排除桌子與雜訊</span>
             </div>
-
             <div class="relative bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center max-h-80">
                 <canvas id="crop-canvas" class="max-w-full max-h-72 object-contain cursor-crosshair touch-none"></canvas>
             </div>
             <p class="text-xs text-slate-500 text-center">提示：在圖片上拖曳框選出文字區域，點擊「確認裁切並辨識」即可！</p>
-
             <div class="flex space-x-2 pt-1">
                 <button id="btn-skip-crop" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-3 rounded-xl transition">
                     整張直接辨識
@@ -335,28 +332,27 @@
         </div>
     </div>
 
+    <!-- 核心腳本區 -->
     <script>
-        // ===== PWA 自動註冊 Service Worker =====
+        // PWA 自動註冊 Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => { console.log('Service Worker 註冊成功:', reg.scope); })
-                    .catch((err) => { console.log('Service Worker 註冊失敗:', err); });
+                navigator.serviceWorker.register('/sw.js').catch(()=>{});
             });
         }
 
-        // ===== 核心設定 =====
+        // 核心設定與 DOM 綁定
         const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.0-flash"];
         let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v11_05';
+        const STORAGE_KEY = 'my_dictation_saved_lists_v11_08';
 
-        // ===== DOM 元素綁定 =====
         const setupScreen = document.getElementById('setup-screen');
         const dictationScreen = document.getElementById('dictation-screen');
         const resultScreen = document.getElementById('result-screen');
         const inputWords = document.getElementById('input-words');
         const helperDesc = document.getElementById('helper-desc');
         const dynamicModeIndicator = document.getElementById('dynamic-mode-indicator');
+        const langAutoBadge = document.getElementById('lang-auto-badge');
 
         const btnModeEn = document.getElementById('btn-mode-en');
         const btnModeZh = document.getElementById('btn-mode-zh');
@@ -413,7 +409,7 @@
         const btnSkipCrop = document.getElementById('btn-skip-crop');
         const btnConfirmCrop = document.getElementById('btn-confirm-crop');
 
-        // ===== 狀態變數 =====
+        // 狀態變數
         let originalWords = [];
         let dictationQueue = [];
         let currentQueueIndex = 0;
@@ -430,13 +426,6 @@
         let lastOcrContext = null;
         let lastGradingContext = null;
 
-        // ===== 初始化 =====
-        window.addEventListener('DOMContentLoaded', () => {
-            renderSavedLists();
-            checkInputLanguageAndSegment();
-        });
-
-        // ===== 通用對話框 =====
         function showAlert(msg) {
             modalMessage.innerText = msg;
             customModal.classList.remove('hidden');
@@ -446,7 +435,7 @@
             if (e.target === customModal) customModal.classList.add('hidden');
         });
 
-        // ===== 儲存機制 =====
+        // 儲存機制
         function loadSavedLists() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
@@ -455,7 +444,6 @@
                 return [];
             }
         }
-
         function saveListsToStorage(lists) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
         }
@@ -526,7 +514,12 @@
             showAlert("「" + titleName + "」已成功儲存！");
         });
 
-        // ===== 手動語言切換按鈕事件 =====
+        // 初始化與科目按鈕
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSavedLists();
+            checkInputLanguageAndSegment();
+        });
+
         btnModeEn.addEventListener('click', () => {
             selectedLanguageOverride = 'en';
             btnModeEn.className = "bg-blue-600 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm";
@@ -620,10 +613,7 @@
                     }
                 }
             }
-            if (currentSeg.trim().length > 0) {
-                segments.push(currentSeg.trim());
-            }
-
+            if (currentSeg.trim().length > 0) segments.push(currentSeg.trim());
             if (segments.length === 0) segments = [cleaned];
 
             inputWords.value = segments.map((s, idx) => (idx + 1) + ". " + s).join('\n');
@@ -632,6 +622,7 @@
             showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
         });
 
+        // 全選與清除
         let isAllSelected = false;
         btnSelectAll.addEventListener('click', () => {
             inputWords.focus();
@@ -657,6 +648,7 @@
             }
         });
 
+        // 語音朗讀
         function speakText(text, overrideSpeed) {
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
@@ -686,6 +678,7 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
+        // 圖片上傳與裁切
         cameraUpload.addEventListener('change', handleImageUpload);
         galleryUpload.addEventListener('change', handleImageUpload);
 
@@ -824,7 +817,6 @@
             ocrRetryContainer.classList.add('hidden');
         }
 
-        // 防 404/504 核心 1：圖片前端畫布強效壓縮 (1200px Max, 0.85 Quality)
         async function executeGeminiVision(isSkipped) {
             if (!currentImgObj) return;
 
@@ -836,16 +828,11 @@
             let sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
             let sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
 
-            const MAX_DIM = 1200;
-            let scale = 1;
-            if (sw > MAX_DIM || sh > MAX_DIM) {
-                scale = Math.min(MAX_DIM / sw, MAX_DIM / sh);
-            }
-            targetCanvas.width = Math.floor(sw * scale);
-            targetCanvas.height = Math.floor(sh * scale);
-            tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, targetCanvas.width, targetCanvas.height);
+            targetCanvas.width = sw;
+            targetCanvas.height = sh;
+            tCtx.drawImage(currentImgObj, sx, sy, sw, sh, 0, 0, sw, sh);
 
-            showOcrStatus("正在壓縮與分析圖片...", "步驟 1/2：智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
+            showOcrStatus("正在分析中英文字體...", "步驟 1/2：智慧提取課文正文（自動過濾手寫筆記與標題）...", false);
 
             targetCanvas.toBlob(async (blob) => {
                 try {
@@ -890,26 +877,9 @@
             }
         });
 
-        // 防 404 核心 2 & 3：帶有 3 次重試與多模型輪詢的 OCR
         async function callGeminiOCR(base64Data) {
-            const systemPrompt = `You are an expert bilingual teacher (English & Chinese Cantonese) for primary students in Hong Kong.
-Extract dictation words, vocabulary, or sentences from the image carefully.
-
-CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
-1. **WHAT TO EXTRACT (YES)**:
-   - Body sentences (課文正文句子)
-   - Vocabulary / sentence list items (詞彙／句子清單項目)
-   - Keep original printed punctuation and spelling.
-2. **WHAT TO IGNORE (NO - DO NOT EXTRACT)**:
-   - NO titles or unit headings.
-   - NO section subtitles, page numbers, footers, watermarks, publisher names.
-   - NO student handwritten answers, teacher markings, red pen notes, checkmarks, circles, highlighter, or margin notes.
-   - NO exercise instructions.
-3. **HANDWRITTEN VS PRINTED RULE**:
-   - If BOTH printed text AND handwritten text appear, completely IGNORE the handwritten text and extract ONLY the printed text.
-   - ONLY extract handwritten text if there is NO printed text at all on the page.
-4. **FORMATTING**:
-   - Output ONLY a clean numbered list sorted strictly in ascending numeric order (1., 2., 3., ...), one item per line. No extra commentary, no markdown code blocks.`;
+            const systemPrompt = `You are an expert bilingual teacher for primary students in Hong Kong.
+Extract dictation text strictly ignoring headings, handwritten notes, and exercises. Return clean numbered items only.`;
 
             let attempts = 3;
             let lastError = null;
@@ -924,7 +894,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                         contents: [{
                             role: "user",
                             parts: [
-                                { text: "Extract and format exactly the list of dictation items (English or Chinese/Cantonese) from this image." },
+                                { text: "Extract dictation items." },
                                 { inlineData: { mimeType: "image/jpeg", data: base64Data } }
                             ]
                         }],
@@ -932,22 +902,14 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                     });
 
                     try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: body
-                        });
-
+                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
                         if (response.ok) {
                             currentGeminiModel = model;
                             const apiResult = await response.json();
                             const candidate = apiResult.candidates && apiResult.candidates[0];
                             if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                                let aiFinalText = candidate.content.parts[0].text.trim();
-                                aiFinalText = aiFinalText.replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
-                                if (aiFinalText) {
-                                    return { success: true, text: aiFinalText };
-                                }
+                                let aiFinalText = candidate.content.parts[0].text.trim().replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                                if (aiFinalText) return { success: true, text: aiFinalText };
                             }
                         } else {
                             let errorData = null;
@@ -958,9 +920,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                         lastError = { response: null, data: null };
                     }
                 }
-                if (attempt < attempts) {
-                    await new Promise(r => setTimeout(r, 1500));
-                }
+                if (attempt < attempts) await new Promise(r => setTimeout(r, 2000));
             }
             return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
         }
@@ -970,11 +930,8 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             let items = [];
             lines.forEach(line => {
                 const match = line.match(/^([0-9]+)[\.\)]\s*(.*)$/);
-                if (match) {
-                    items.push({ num: parseInt(match[1], 10), content: match[2].trim() });
-                } else if (items.length > 0) {
-                    items[items.length - 1].content += " " + line;
-                }
+                if (match) items.push({ num: parseInt(match[1], 10), content: match[2].trim() });
+                else if (items.length > 0) items[items.length - 1].content += " " + line;
             });
             let uniqueMap = new Map();
             items.forEach(item => {
@@ -1020,7 +977,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             showAlert("Gemini 解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // ===== AI 批改功能 =====
+        // AI 批改與超嚴格錨點對齊邏輯
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -1041,14 +998,14 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：圖片壓縮並進行雙向錨點對齊與逐字實報比對...", false);
+            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：正將手寫圖片逐字實報 transcribe 並與標準答案逐一比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
-                const compressedBase64 = await compressImageFile(file, 1200, 0.85);
-                lastGradingContext = { base64Data: compressedBase64, mimeType: "image/jpeg" };
+                const base64Data = await fileToBase64(file);
+                lastGradingContext = { base64Data: base64Data, mimeType: file.type || "image/jpeg" };
 
-                const result = await callGeminiGrading(compressedBase64, "image/jpeg");
+                const result = await callGeminiGrading(base64Data, file.type || "image/jpeg");
 
                 if (result.success) {
                     hideGradingStatus();
@@ -1064,33 +1021,6 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                 showGradingStatus(classified.title, classified.detail, true);
             }
         });
-
-        function compressImageFile(file, maxDim = 1200, quality = 0.85) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let sw = img.width, sh = img.height;
-                        let scale = 1;
-                        if (sw > maxDim || sh > maxDim) {
-                            scale = Math.min(maxDim / sw, Math.max(maxDim / sh));
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = Math.floor(sw * scale);
-                        canvas.height = Math.floor(sh * scale);
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                        resolve(dataUrl.split(',')[1]);
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-            });
-        }
 
         btnGradingRetry.addEventListener('click', async () => {
             if (!lastGradingContext) return;
@@ -1112,49 +1042,33 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 核心：超高精度錨點對齊與防錯位 Prompt（徹底解決第4與第5題錯位誤標問題）
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
             const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong.
 Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors.
 
-STANDARD ANSWERS (Standard correct sentences, ordered by index):
+STANDARD ANSWERS:
 ${standardAnswersJSON}
 
-CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
-
-1. **SENTENCE & WORD BOUNDARY ALIGNMENT (禁止跨句硬湊對齊)**:
-   - Match each student sentence STRICTLY to its corresponding Standard Answer item by item.
-   - **ENTIRE SENTENCE OMISSION (整句全漏)**: If the student completely skipped a standard sentence (e.g. Standard Item 5: "消除壓力。"), DO NOT pull words from subsequent sentences or previous sentences to fill it! Mark the entire item as GREEN OMITTED:
-     `<span class="text-emerald-600 font-bold">[漏字: 消除壓力]</span>`
-
-2. **CHARACTER-LEVEL ANCHOR MATCHING (內部錨點保護正字)**:
-   - Standard: "還可以舒展身心，"
-   - Student wrote: "還可以身伸" (skipped "舒展", wrote "身", wrote "伸" instead of "心").
-   - Correct Output for this sentence:
-     "學生寫成：還可以<span class="text-emerald-600 font-bold">[漏字: 舒展]</span>身<span class="text-rose-600 line-through font-bold">伸</span><span class="text-rose-600 font-bold">(正字: 心)</span>，"
-   - **DO NOT** mark "還", "可", "以", "身" as wrong! They match the standard answer perfectly!
-
-3. **STRICT SPAN FORMATTING**:
-   - **RED SPAN (錯字 / 寫錯字 / 別字)**: Mark ONLY characters that the student ACTUALLY WROTE INCORRECTLY.
-     Format: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正字)</span>
-   - **GREEN SPAN (漏字 / 未寫)**: Mark any standard characters that the student COMPLETELY SKIPPED.
-     Format: <span class="text-emerald-600 font-bold">[漏字: 遺漏字詞]</span>
-
-4. **JSON OUTPUT FORMAT**:
-   Return ONLY a valid JSON object (no markdown code blocks, no extra commentary):
+CRITICAL SEQUENCE & ANCHOR RULES:
+1. STRICT ANCHOR ALIGNMENT: 
+   - First match words written correctly as anchor points (e.g. "還可以", "身").
+   - Do NOT shift alignment or mark correct words ("還", "可", "以", "身") as wrong.
+2. OMISSION HIGHLIGHTING:
+   - For skipped characters within a sentence (e.g., student wrote "還可以身伸" for "還可以舒展身心"), correctly tag omitted words in GREEN:
+     "學生寫成：還可以<span class=\"text-emerald-600 font-bold\">[漏字: 舒展]</span>身<span class=\"text-rose-600 line-through font-bold\">伸</span><span class=\"text-rose-600 font-bold\">(正字: 心)</span>，"
+3. ENTIRE SENTENCE OMISSION: 
+   - If an entire sentence is missing (e.g. Standard Item 5: "消除壓力。"), tag the full sentence in GREEN:
+     <span class=\"text-emerald-600 font-bold\">[漏字: 消除壓力]</span>
+   - Do NOT pull words from subsequent sentences to fill the gap.
+4. RED SPAN FOR WRONG CHARACTERS: 
+   <span class=\"text-rose-600 line-through font-bold\">錯字</span><span class=\"text-rose-600 font-bold\">(正字: 正字)</span>
+5. OUTPUT FORMAT: Return ONLY valid JSON:
    {
      "scoreSummary": "得分總覽 (例：65 分 — 發現 3 個錯字、8 個漏字)",
      "htmlDetails": "HTML string containing breakdown by sentence"
-   }
-
-   Inside "htmlDetails", format each sentence like:
-   <div class="mb-3 pb-3 border-b border-slate-100">
-     <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
-     <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
-     <div class="text-slate-600 leading-relaxed">學生寫成：[Sentence with RED wrong words and GREEN missing words]</div>
-   </div>`;
+   }`;
 
             let attempts = 3;
             let lastError = null;
@@ -1169,7 +1083,7 @@ CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
                         contents: [{
                             role: "user",
                             parts: [
-                                { text: "Perform high-precision anchor alignment. For item 4 '還可以舒展身心', student wrote '還可以身伸' -> '還可以' is correct, '舒展' is missing (GREEN), '身' is correct, '伸' is wrong for '心' (RED). Item 5 '消除壓力' is 100% missing (GREEN). Return valid JSON only." },
+                                { text: "Perform high-precision anchor alignment and grading. Return valid JSON only." },
                                 { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                             ]
                         }],
@@ -1211,7 +1125,7 @@ CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
             return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
         }
 
-        // ===== 默書流程控制 =====
+        // 默書流程控制
         btnStart.addEventListener('click', () => {
             const rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先輸入默書詞彙或句子！");
