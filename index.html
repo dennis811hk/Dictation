@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - 雙語智能版</title>
+    <title>自動默書小幫手 - 雙語智能旗艦版</title>
 
     <!-- PWA 必要：載入 Manifest 檔案 -->
     <link rel="manifest" href="/manifest.json">
@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">中英雙語智慧版</span>
+        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">雙語超精準批改版</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -834,7 +834,6 @@
             let sx = isSkipped || cropRect.width === 0 ? 0 : cropRect.x;
             let sy = isSkipped || cropRect.height === 0 ? 0 : cropRect.y;
 
-            // 限制最高 1200px，縮減超大 Base64
             const MAX_DIM = 1200;
             let scale = 1;
             if (sw > MAX_DIM || sh > MAX_DIM) {
@@ -1033,7 +1032,6 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             gradingRetryContainer.classList.add('hidden');
         }
 
-        // 上傳檔案時先在 Canvas 壓縮再發送 API（防 404/504 核心 1 的 File 處理）
         gradingUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1041,11 +1039,10 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：圖片壓縮並進行逐字實報比對...", false);
+            showGradingStatus("AI 正在進行超高精度手寫字跡校對...", "步驟 1/2：圖片壓縮並進行雙向錨點對齊與逐字實報比對...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
-                // 壓縮相片至最長邊 1200px
                 const compressedBase64 = await compressImageFile(file, 1200, 0.85);
                 lastGradingContext = { base64Data: compressedBase64, mimeType: "image/jpeg" };
 
@@ -1066,7 +1063,6 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 圖片檔案前置畫布壓縮 Helper
         function compressImageFile(file, maxDim = 1200, quality = 0.85) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1077,7 +1073,7 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
                         let sw = img.width, sh = img.height;
                         let scale = 1;
                         if (sw > maxDim || sh > maxDim) {
-                            scale = Math.min(maxDim / sw, maxDim / sh);
+                            scale = Math.min(maxDim / sw, Math.max(maxDim / sh));
                         }
                         const canvas = document.createElement('canvas');
                         canvas.width = Math.floor(sw * scale);
@@ -1114,50 +1110,46 @@ CRITICAL FILTERING RULES (WHAT TO EXTRACT vs WHAT TO IGNORE):
             }
         });
 
-        // 防 404 核心 2, 3 & 4：超嚴格如實逐字識別 + 3次自動重試與多模型輪詢
+        // 核心：重構 Gemini 批改系統提示詞（解決「以/善」及「強/紙訊」誤判問題）
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
             const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong.
-Your task is to transcribe and grade a student's handwritten homework photo against standard answers.
+Your task is to accurately transcribe the student's handwritten dictation from the photo, align it character-by-character with the Standard Answers, and mark errors.
 
-STANDARD ANSWERS (Expected correct content):
+STANDARD ANSWERS (Standard correct sentences):
 ${standardAnswersJSON}
 
-CRITICAL RULES FOR CHINESE HANDWRITING & OMISSION ALIGNMENT (極嚴格序列對齊與漏字偵測規則)：
+CRITICAL MANDATORY RULES FOR HIGH-PRECISION ALIGNMENT & MARKING:
 
-1. **LITERAL TRANSCRIPTION & NO AUTOCORRECT (如實逐字識別，絕不自動糾錯)**:
-   - Transcribe every single character or word exactly as written in the photo.
-   - Do not fix typos, do not change wrong characters to correct ones.
+1. **ANCHOR-BASED ALIGNMENT (錨點對齊演練 - 解決錯位標錯正字問題)**:
+   - First, find all correctly written anchor words in the handwritten text (e.g. "增強", "可以改").
+   - Lock these matching anchor words onto the corresponding positions in the Standard Answer.
+   - NEVER misalign correct characters! For example:
+     - Standard: "增強抵抗力外", Student wrote: "增強紙訊力外" -> "增強" and "力外" match perfectly! Only "抵抗" was written as "紙訊". DO NOT mark "強" as wrong!
+     - Standard: "我認為運動除了可以改善體能", Student wrote: "動除了可以改善" -> "可以改" and "動除了" match! "認為運" are 3 missing words before "動", "體能" are 2 missing words after "改善". "善" is written correctly! DO NOT add a non-existent "以" after "善"!
 
-2. **SEQUENCE ALIGNMENT FOR OMISSIONS (對齊與漏字優先原則 - 解決連續漏字問題)**:
-   - Carefully align the student's handwritten text with the Standard Answer line by line / character by character.
-   - **CRITICAL OMISSION DETECTION**: If standard text contains missing words (e.g. Standard: "我認為運動除了可以改善體能", Student wrote: "動除了可以改善"), recognize that:
-     * "認為運" (3 characters) are completely OMITTED before "動".
-     * "體能" (2 characters) are completely OMITTED after "改善".
-   - DO NOT misalign "動" to match "認" and label it as wrong! You MUST align matching characters and label skipped characters as **GREEN OMISSIONS**:
-     <span class="text-emerald-600 font-bold">[漏字: 認為運]</span>
-     <span class="text-emerald-600 font-bold">[漏字: 體能]</span>
+2. **PROTECT CORRECT CHARACTERS (正確字絕對保護)**:
+   - If the student's character literally matches the character in the standard answer at that aligned position (e.g., "強", "以", "善", "動"), YOU MUST KEEP IT AS NORMAL TEXT. NEVER wrap correct characters in red wrong-character spans!
 
-3. **MARKING COLORS**:
-   - **RED COLOR (錯字 / 別字 / 誤寫)**: Only mark characters that were ACTUALLY WRITTEN INCORRECTLY by the student.
-     Format: <span class="text-rose-600 line-through font-bold">寫錯字</span><span class="text-rose-600 font-bold">(正字: 應寫字)</span>
-     *Note*: Do NOT mark correctly written Chinese characters (like "善" or "動") as wrong if they match the standard text!
-   - **GREEN COLOR (漏字 / 遺漏)**: Mark any character/word from the standard answer that the student SKIPPED or forgot to write.
-     Format: <span class="text-emerald-600 font-bold">[漏字: 遺漏的字詞]</span>
+3. **STRICT SPAN FORMATTING**:
+   - **RED SPAN (錯字 / 別字 / 寫錯)**: Mark ONLY characters that the student ACTUALLY WROTE INCORRECTLY.
+     Format: <span class="text-rose-600 line-through font-bold">錯字</span><span class="text-rose-600 font-bold">(正字: 正字)</span>
+   - **GREEN SPAN (漏字 / 遺漏)**: Mark any standard characters that the student COMPLETELY SKIPPED / OMITTED.
+     Format: <span class="text-emerald-600 font-bold">[漏字: 遺漏字詞]</span>
 
 4. **JSON OUTPUT FORMAT**:
-   Return ONLY a valid JSON object (no markdown, no extra text):
+   Return ONLY a valid JSON object (no markdown code blocks, no extra commentary):
    {
-     "scoreSummary": "得分總覽 (例：65 分 — 發現 2 個錯字、5 個漏字)",
-     "htmlDetails": "HTML string containing sentence-by-sentence analysis"
+     "scoreSummary": "得分總覽 (例：75 分 — 發現 2 個錯字、5 個漏字)",
+     "htmlDetails": "HTML string containing breakdown by sentence"
    }
 
-   Format for htmlDetails:
+   Inside "htmlDetails", format each sentence like:
    <div class="mb-3 pb-3 border-b border-slate-100">
      <div class="text-[10px] text-slate-400 mb-0.5">第 N 題</div>
      <div class="font-bold text-slate-800 mb-1">標準答案：[Standard sentence]</div>
-     <div class="text-slate-600 leading-relaxed">學生寫成：[Detailed sentence with RED wrong words and GREEN missing words]</div>
+     <div class="text-slate-600 leading-relaxed">學生寫成：[Sentence with RED wrong words and GREEN missing words]</div>
    </div>`;
 
             let attempts = 3;
@@ -1173,7 +1165,7 @@ CRITICAL RULES FOR CHINESE HANDWRITING & OMISSION ALIGNMENT (極嚴格序列對�
                         contents: [{
                             role: "user",
                             parts: [
-                                { text: "Grade the handwritten homework photo. Align sequence carefully to catch all omitted words (like 認為運, 體能) and highlight missing words in GREEN, wrong characters in RED. Return valid JSON only." },
+                                { text: "Perform anchor-based alignment on the handwritten dictation. Keep correct words (強, 以, 善) untouched. Highlight actual wrong characters in RED and skipped words (認, 為, 運, 體, 能) in GREEN. Return valid JSON only." },
                                 { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                             ]
                         }],
