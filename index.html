@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="creative-medium" content="interactive-prototype">
-    <title>自動默書小幫手 - 雙語智能版 (Gemini 3.8 Flash)</title>
+    <title>自動默書小幫手 - 雙語智能版 (Gemini 3.8 Flash / 3.5 Flash)</title>
 
     <!-- PWA 必要：載入 Manifest 檔案 -->
     <link rel="manifest" href="/manifest.json">
@@ -32,7 +32,7 @@
             </svg>
             <h1 class="text-xl font-bold">自動默書小幫手</h1>
         </div>
-        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Gemini 3.8 Flash 專用版</span>
+        <span id="header-badge" class="text-xs bg-blue-500 px-2.5 py-1 rounded-full font-medium">Gemini 3.8 / 3.5 雙引擎</span>
     </header>
 
     <!-- 主要內容區 -->
@@ -186,7 +186,7 @@
                 <button id="btn-back-setup" class="text-xs text-slate-400 hover:text-slate-600 font-medium">返回設定</button>
             </div>
 
-            <!-- 隱藏播放中文字卡片 (防止學童偷看答案) -->
+            <!-- 隱藏播放中文字卡片 -->
             <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center flex flex-col items-center justify-center min-h-20 space-y-1">
                 <span class="text-xs font-semibold text-slate-400">🔒 語音題目播放中 (文字已隱藏)</span>
                 <p class="text-[11px] text-slate-400">請仔細聆聽並寫在默書本上</p>
@@ -243,7 +243,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Gemini 3.8 Flash 拍照紅筆批改與比對</span>
+                    <span>Gemini AI 拍照紅筆批改與比對</span>
                 </div>
                 <div class="bg-white p-2.5 rounded-lg border border-indigo-100 text-[11px] text-slate-600 space-y-1">
                     <p class="font-semibold text-indigo-800">圖例與說明：</p>
@@ -272,7 +272,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">Gemini 3.8 Flash 正在逐字精準批改中...</span>
+                        <span id="grading-status-text" class="text-xs font-semibold text-indigo-700">Gemini 正在逐字精準批改中...</span>
                     </div>
                     <p id="grading-status-detail" class="text-[10px] text-indigo-600 ml-6 leading-relaxed"></p>
                     <div id="grading-retry-container" class="hidden ml-6 mt-2">
@@ -334,17 +334,15 @@
 
     <!-- 核心腳本區 -->
     <script>
-        // PWA 自動註冊 Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(()=>{});
             });
         }
 
-        // 強制固定使用最新高精度模型 gemini-3.8-flash
-        const GEMINI_MODELS = ["gemini-3.8-flash"];
-        let currentGeminiModel = GEMINI_MODELS[0];
-        const STORAGE_KEY = 'my_dictation_saved_lists_v11_10';
+        // 主力：gemini-3.8-flash，備用：gemini-3.5-flash
+        const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];
+        const STORAGE_KEY = 'my_dictation_saved_lists_v12_0';
 
         const setupScreen = document.getElementById('setup-screen');
         const dictationScreen = document.getElementById('dictation-screen');
@@ -409,7 +407,6 @@
         const btnSkipCrop = document.getElementById('btn-skip-crop');
         const btnConfirmCrop = document.getElementById('btn-confirm-crop');
 
-        // 狀態變數
         let originalWords = [];
         let dictationQueue = [];
         let currentQueueIndex = 0;
@@ -435,7 +432,6 @@
             if (e.target === customModal) customModal.classList.add('hidden');
         });
 
-        // 儲存機制
         function loadSavedLists() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
@@ -514,7 +510,6 @@
             showAlert("「" + titleName + "」已成功儲存！");
         });
 
-        // 初始化與科目按鈕
         window.addEventListener('DOMContentLoaded', () => {
             renderSavedLists();
             checkInputLanguageAndSegment();
@@ -622,7 +617,6 @@
             showAlert("已成功按中文標點符號自動拆分為 " + segments.length + " 個獨立句子！");
         });
 
-        // 全選與清除
         let isAllSelected = false;
         btnSelectAll.addEventListener('click', () => {
             inputWords.focus();
@@ -648,7 +642,6 @@
             }
         });
 
-        // 語音朗讀
         function speakText(text, overrideSpeed) {
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
@@ -678,7 +671,6 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
-        // 圖片上傳與裁切
         cameraUpload.addEventListener('change', handleImageUpload);
         galleryUpload.addEventListener('change', handleImageUpload);
 
@@ -860,7 +852,7 @@
 
         btnOcrRetry.addEventListener('click', async () => {
             if (!lastOcrContext) return;
-            showOcrStatus("正在重試...", "重新發送圖片至 Gemini 3.8 Flash 模型辨識", false);
+            showOcrStatus("正在重試...", "重新發送圖片至 Gemini 辨識引擎", false);
             try {
                 const result = await callGeminiOCR(lastOcrContext.base64Data);
                 if (result.success) {
@@ -878,15 +870,16 @@
         });
 
         async function callGeminiOCR(base64Data) {
-            const systemPrompt = `You are an expert bilingual teacher for primary students in Hong Kong using Gemini 3.8 Flash vision.
+            const systemPrompt = `You are an expert bilingual teacher for primary students in Hong Kong using Gemini vision capabilities.
 Extract dictation text strictly ignoring headings, handwritten notes, and exercises. Return clean numbered items only.`;
 
-            let attempts = 3;
             let lastError = null;
 
-            for (let attempt = 1; attempt <= attempts; attempt++) {
-                const model = "gemini-3.8-flash";
+            for (let mIdx = 0; mIdx < GEMINI_MODELS.length; mIdx++) {
+                const model = GEMINI_MODELS[mIdx];
                 const apiUrl = "/api/chat";
+
+                showOcrStatus("正在分析中英文字體...", `正在使用 ${model} 智慧提取課文正文...`, false);
 
                 const body = JSON.stringify({
                     model: model,
@@ -900,25 +893,33 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
-                try {
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
-                    if (response.ok) {
-                        const apiResult = await response.json();
-                        const candidate = apiResult.candidates && apiResult.candidates[0];
-                        if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
-                            let aiFinalText = candidate.content.parts[0].text.trim().replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
-                            if (aiFinalText) return { success: true, text: aiFinalText };
-                        }
-                    } else {
-                        let errorData = null;
-                        try { errorData = await response.json(); } catch(e) {}
-                        lastError = { response: response, data: errorData };
-                    }
-                } catch (fetchErr) {
-                    lastError = { response: null, data: null };
-                }
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-                if (attempt < attempts) await new Promise(r => setTimeout(r, 2000));
+                    try {
+                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (response.ok) {
+                            const apiResult = await response.json();
+                            const candidate = apiResult.candidates && apiResult.candidates[0];
+                            if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                                let aiFinalText = candidate.content.parts[0].text.trim().replace(/^```\w*\s*/i, '').replace(/\s*```$/, '');
+                                if (aiFinalText) return { success: true, text: aiFinalText };
+                            }
+                        } else {
+                            let errorData = null;
+                            try { errorData = await response.json(); } catch(e) {}
+                            lastError = { response: response, data: errorData };
+                        }
+                    } catch (fetchErr) {
+                        clearTimeout(timeoutId);
+                        lastError = { response: null, data: null };
+                    }
+
+                    if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
+                }
             }
             return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
         }
@@ -972,10 +973,9 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
             inputWords.value = Array.from(uniqueMap.values()).map((s, idx) => (idx + 1) + ". " + s).join('\n');
             hideOcrStatus();
             checkInputLanguageAndSegment();
-            showAlert("Gemini 3.8 Flash 解析完成！已加入 " + newLines.length + " 個正文項目。");
+            showAlert("Gemini 智慧解析完成！已加入 " + newLines.length + " 個正文項目。");
         }
 
-        // AI 批改與超嚴格錨點對齊邏輯（獨佔 gemini-3.8-flash）
         function showGradingStatus(title, detail, showRetry) {
             gradingStatusContainer.classList.remove('hidden');
             gradingStatusText.innerText = title;
@@ -996,7 +996,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
 
             if (originalWords.length === 0) return showAlert("沒有標準答案可供比對！請先輸入默書內容或進行默書。");
 
-            showGradingStatus("Gemini 3.8 Flash 正在進行高精度手寫校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一對齊...", false);
+            showGradingStatus("Gemini AI 正在進行高精度手寫校對...", "步驟 1/2：正將手寫圖片逐字 transcribe 並與標準答案逐一對齊...", false);
             gradingResultContainer.classList.add('hidden');
 
             try {
@@ -1010,7 +1010,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
                     gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
                     gradingResultContainer.classList.remove('hidden');
-                    showAlert("Gemini 3.8 Flash 紅筆批改完成！已精準標出錯別字與漏字。");
+                    showAlert("Gemini AI 紅筆批改完成！已精準標出錯別字與漏字。");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
@@ -1022,7 +1022,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
 
         btnGradingRetry.addEventListener('click', async () => {
             if (!lastGradingContext) return;
-            showGradingStatus("正在重試批改...", "發送至 Gemini 3.8 Flash 重新進行精準批改", false);
+            showGradingStatus("正在重試批改...", "發送至 Gemini 重新進行精準批改", false);
             try {
                 const result = await callGeminiGrading(lastGradingContext.base64Data, lastGradingContext.mimeType);
                 if (result.success) {
@@ -1030,7 +1030,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
                     gradingScore.innerText = result.data.scoreSummary || "批改完成";
                     gradingDetails.innerHTML = result.data.htmlDetails || "<p>批改內容生成完畢。</p>";
                     gradingResultContainer.classList.remove('hidden');
-                    showAlert("Gemini 3.8 Flash 紅筆批改完成！");
+                    showAlert("Gemini AI 紅筆批改完成！");
                 } else {
                     showGradingStatus("批改失敗：" + result.error.title, result.error.detail, true);
                 }
@@ -1043,7 +1043,7 @@ Extract dictation text strictly ignoring headings, handwritten notes, and exerci
         async function callGeminiGrading(base64Data, mimeType) {
             const standardAnswersJSON = JSON.stringify(originalWords);
 
-            const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong using Gemini 3.8 Flash vision and multi-step reasoning capabilities.
+            const systemPrompt = `You are an expert Chinese & English dictation grader for primary school students in Hong Kong using Gemini vision and multi-step reasoning capabilities.
 Your task is to accurately transcribe the student's handwritten dictation from the grid paper in the photo, align it sentence-by-sentence and character-by-character with the Standard Answers, and mark errors.
 
 STANDARD ANSWERS:
@@ -1068,19 +1068,20 @@ CRITICAL SEQUENCE & ANCHOR RULES:
      "htmlDetails": "HTML string containing breakdown by sentence"
    }`;
 
-            let attempts = 3;
             let lastError = null;
 
-            for (let attempt = 1; attempt <= attempts; attempt++) {
-                const model = "gemini-3.8-flash";
+            for (let mIdx = 0; mIdx < GEMINI_MODELS.length; mIdx++) {
+                const model = GEMINI_MODELS[mIdx];
                 const apiUrl = "/api/chat";
+
+                showGradingStatus("Gemini AI 正在進行高精度手寫校對...", `正在呼叫 ${model} 進行對齊與批改...`, false);
 
                 const body = JSON.stringify({
                     model: model,
                     contents: [{
                         role: "user",
                         parts: [
-                            { text: "Perform high-precision anchor alignment and grading using Gemini 3.8 Flash. Return valid JSON only." },
+                            { text: "Perform high-precision anchor alignment and grading using Gemini. Return valid JSON only." },
                             { inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } }
                         ]
                     }],
@@ -1091,37 +1092,42 @@ CRITICAL SEQUENCE & ANCHOR RULES:
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 });
 
-                try {
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
-                    if (response.ok) {
-                        const result = await response.json();
-                        const textResp = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-                        const cleanJson = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-                        let parsed;
-                        try {
-                            parsed = JSON.parse(cleanJson);
-                        } catch (e) {
-                            const match = cleanJson.match(/\{[\s\S]*\}/);
-                            parsed = match ? JSON.parse(match[0]) : { scoreSummary: "批改完成", htmlDetails: cleanJson };
-                        }
-                        return { success: true, data: parsed };
-                    } else {
-                        let errorData = null;
-                        try { errorData = await response.json(); } catch(e) {}
-                        lastError = { response: response, data: errorData };
-                    }
-                } catch (fetchErr) {
-                    lastError = { response: null, data: null };
-                }
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 18000);
 
-                if (attempt < attempts) {
-                    await new Promise(r => setTimeout(r, 2000));
+                    try {
+                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            const textResp = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+                            const cleanJson = textResp.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+                            let parsed;
+                            try {
+                                parsed = JSON.parse(cleanJson);
+                            } catch (e) {
+                                const match = cleanJson.match(/\{[\s\S]*\}/);
+                                parsed = match ? JSON.parse(match[0]) : { scoreSummary: "批改完成", htmlDetails: cleanJson };
+                            }
+                            return { success: true, data: parsed };
+                        } else {
+                            let errorData = null;
+                            try { errorData = await response.json(); } catch(e) {}
+                            lastError = { response: response, data: errorData };
+                        }
+                    } catch (fetchErr) {
+                        clearTimeout(timeoutId);
+                        lastError = { response: null, data: null };
+                    }
+
+                    if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
                 }
             }
             return { success: false, error: classifyGeminiError(lastError?.response, lastError?.data) };
         }
 
-        // 默書流程控制
         btnStart.addEventListener('click', () => {
             const rawText = inputWords.value.trim();
             if (!rawText) return showAlert("請先輸入默書詞彙或句子！");
