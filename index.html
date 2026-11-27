@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -45,10 +45,10 @@
       </div>
       <div>
         <h1 class="text-lg font-bold leading-tight">自動默書小幫手</h1>
-        <p class="text-[10px] text-blue-100">3.5 Lite 極速讀書 × 3.8 Flash 真盲讀批改</p>
+        <p class="text-[10px] text-blue-100">3.5 Lite 極速讀書 × 3.6 Flash 雙階段盲讀</p>
       </div>
     </div>
-    <span id="header-badge" class="text-[10px] bg-white/20 backdrop-blur-xs px-2.5 py-1 rounded-full font-semibold">AI Pro v2.6</span>
+    <span id="header-badge" class="text-[10px] bg-white/20 backdrop-blur-xs px-2.5 py-1 rounded-full font-semibold">AI Pro v2.7</span>
   </header>
 
   <!-- 主要內容區 -->
@@ -319,16 +319,29 @@
           </svg>
         </div>
         <h2 class="text-lg font-bold text-slate-800">AI 紅筆批改中心</h2>
-        <p id="result-summary" class="text-xs text-slate-500 mt-0.5">Gemini 3.8 Flash 真・雙階段盲讀，徹底杜絕漏格腦補！</p>
+        <p id="result-summary" class="text-xs text-slate-500 mt-0.5">雙階段盲讀批改（附智能自動備援，唔會卡死逾時）</p>
       </div>
 
       <!-- AI 拍照 / 多頁上傳批改卡片 -->
       <div class="bg-indigo-50/80 border border-indigo-100 p-4 rounded-xl space-y-3">
         <div class="flex items-center justify-between">
           <span class="text-indigo-900 font-bold text-xs flex items-center space-x-1.5">
-            <span>🖋️ 3.8 Flash 雙階段盲讀批改</span>
+            <span>🖋️ AI 雙階段盲讀批改</span>
           </span>
           <span class="text-[10px] bg-indigo-600 text-white font-semibold px-2 py-0.5 rounded-full">專捉留空漏字</span>
+        </div>
+
+        <!-- 批改模型選擇器（自動記住偏好） -->
+        <div class="bg-white p-2.5 rounded-lg border border-indigo-200/80 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="grading-model-select" class="text-[11px] font-bold text-indigo-900">🤖 批改 AI 引擎（自動備援防逾時）</label>
+            <span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">超時自動轉 Lite</span>
+          </div>
+          <select id="grading-model-select" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="gemini-3.6-flash" selected>🚀 Gemini 3.6 Flash（穩定精準・推薦預設）</option>
+            <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash-Lite（極速版・最穩最快）</option>
+            <option value="gemini-3.8-flash">🧠 Gemini 3.8 Flash（實驗・如塞車自動轉 Lite）</option>
+          </select>
         </div>
 
         <div class="bg-white p-2.5 rounded-lg border border-indigo-100 text-[11px] text-slate-600 space-y-1.5">
@@ -347,7 +360,7 @@
           </label>
           <!-- 深度錯筆畫覆核開關 -->
           <label class="flex items-center justify-between pt-1 border-t border-slate-100 cursor-pointer select-none">
-            <span class="text-[11px] font-medium text-slate-700">🔍 深度錯筆畫覆核（3.8 MEDIUM，稍慢但最嚴謹）</span>
+            <span class="text-[11px] font-medium text-slate-700">🔍 深度錯筆畫覆核（MEDIUM 思考，稍慢但最嚴謹）</span>
             <input type="checkbox" id="opt-deep-stroke-check" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
           </label>
         </div>
@@ -401,9 +414,9 @@
         </div>
 
         <!-- AI 讀秒耗時統計欄 -->
-        <div id="grading-timing-bar" class="hidden bg-indigo-50/70 border border-indigo-100 px-3 py-2 rounded-xl flex items-center justify-between text-[11px] text-indigo-800 font-semibold">
+        <div id="grading-timing-bar" class="hidden bg-indigo-50/70 border border-indigo-100 px-3 py-2 rounded-xl flex items-center justify-between gap-2 text-[11px] text-indigo-800 font-semibold">
           <span id="grading-timing-detail" class="tabular-nums">⏱️ AI 總耗時：0.0 秒</span>
-          <span id="grading-timing-model" class="text-[10px] bg-white border border-indigo-200/80 text-indigo-700 px-2 py-0.5 rounded-full">3.8 Flash</span>
+          <span id="grading-timing-model" class="text-[10px] bg-white border border-indigo-200/80 text-indigo-700 px-2 py-0.5 rounded-full flex-shrink-0">3.6 Flash</span>
         </div>
 
         <!-- 正面粵語評語 -->
@@ -528,7 +541,7 @@
   <!-- ==================== 核心邏輯腳本 ==================== -->
   <script>
     // ==========================================
-    // 0. 系統常數與黃金混搭模型設定
+    // 0. 系統常數與智能混搭模型設定
     // ==========================================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -538,21 +551,29 @@
 
     const STORAGE_KEY = 'my_dictation_saved_lists_v12';
     const LEGACY_STORAGE_KEY = 'my_dictation_saved_lists_v11_10';
+    const MODEL_PREF_KEY = 'my_dictation_grading_model_v27';
 
-    // 黃金混搭模型配置（無 temperature，嚴格遵從 Gemini 3.5+ / 3.8 官方規範）
-    const OCR_MODEL = 'gemini-3.5-flash-lite';   // 印刷課本：極速、高準確度 (MINIMAL)
-    const GRADING_MODEL = 'gemini-3.8-flash';    // 手寫批改：最強視覺空間對齊 (LOW / 可選 MEDIUM)
+    // 穩定極速模型設定 + 自動備援模型
+    const OCR_MODEL = 'gemini-3.5-flash-lite';
+    const FALLBACK_GRADING_MODEL = 'gemini-3.5-flash-lite';
     const API_URL = '/api/chat';
 
-    // 高清圖片壓縮參數
+    // 高清圖片壓縮參數（兼顧清晰度與傳輸速度）
     const OCR_MAX_DIM = 1800;
-    const GRADING_MAX_DIM = 2400;
-    const JPEG_QUALITY = 0.85;
+    const GRADING_MAX_DIM = 2000;
+    const JPEG_QUALITY = 0.82;
 
-    // 網路逾時保護（毫秒，配合後端 maxDuration = 60）
-    const OCR_TIMEOUT_MS = 45000;
-    const GRADING_PASS1_TIMEOUT_MS = 58000;
-    const GRADING_PASS2_TIMEOUT_MS = 58000;
+    // 敏捷逾時保護：主力模型 28 秒無回應立即切換備援模型，唔會卡死 60 秒
+    const OCR_TIMEOUT_MS = 35000;
+    const PRIMARY_GRADING_TIMEOUT_MS = 28000;
+    const FALLBACK_GRADING_TIMEOUT_MS = 26000;
+
+    function formatModelShortName(modelId) {
+      if (modelId === 'gemini-3.6-flash') return '3.6 Flash';
+      if (modelId === 'gemini-3.5-flash-lite') return '3.5 Lite';
+      if (modelId === 'gemini-3.8-flash') return '3.8 Flash';
+      return modelId;
+    }
 
     // ==========================================
     // 1. DOM 元素綁定
@@ -620,6 +641,7 @@
 
     // 畫面 3
     const resultSummary = document.getElementById('result-summary');
+    const gradingModelSelect = document.getElementById('grading-model-select');
     const optGradePunctuation = document.getElementById('opt-grade-punctuation');
     const optDeepStrokeCheck = document.getElementById('opt-deep-stroke-check');
     const gradingCameraUpload = document.getElementById('grading-camera-upload');
@@ -721,9 +743,6 @@
     let confirmCallback = null;
     let saveCallback = null;
 
-    /**
-     * 可複用即時讀秒器（精準至 0.1 秒）
-     */
     function startLiveTimer(badgeEl, baseOffsetSec = 0) {
       const startTime = performance.now();
       const render = () => {
@@ -761,6 +780,11 @@
       }
       return 0;
     }
+
+    // 記住批改模型偏好
+    gradingModelSelect.addEventListener('change', () => {
+      try { localStorage.setItem(MODEL_PREF_KEY, gradingModelSelect.value); } catch (e) {}
+    });
 
     // ==========================================
     // 3. 自訂安全彈窗
@@ -1301,7 +1325,7 @@
     }
 
     // ==========================================
-    // 7. 網路請求封裝（含逾時、錯誤明細與重試）
+    // 7. 網路請求封裝（含逾時、錯誤明細與智能備援）
     // ==========================================
     async function fetchWithTimeout(url, options, timeoutMs) {
       const controller = new AbortController();
@@ -1319,7 +1343,7 @@
     function classifyApiError(response, err, errorBody) {
       const serverMsg = errorBody?.error?.message || errorBody?.message || '';
       if (err && err.name === 'AbortError') {
-        return { title: '連線逾時', detail: 'AI 處理時間過長或手機訊號較弱，請重試一次。' };
+        return { title: '連線逾時', detail: 'AI 伺服器繁忙未及時回應，建議改選「3.5 Flash-Lite 極速版」再試。' };
       }
       if (!response) {
         return { title: '網路連線失敗', detail: '無法連接伺服器，請檢查 Wi-Fi 或流動數據。' };
@@ -1328,8 +1352,8 @@
       if (status === 413) {
         return { title: '圖片檔案過大', detail: '上傳頁數過多超出伺服器限制，建議減少單次上傳頁數。' };
       }
-      if (status === 504) {
-        return { title: 'Vercel 伺服器逾時 (504)', detail: '請確認 api/chat.js 已加上 maxDuration = 60 設定，或先關閉「深度錯筆畫覆核」再試。' };
+      if (status === 503 || status === 504) {
+        return { title: 'AI 伺服器塞車 (' + status + ')', detail: 'Google 該模型目前容量繁忙，請改用「3.5 Flash-Lite」或稍後再試。' };
       }
       if (status === 400 || status === 401 || status === 403 || status === 404) {
         return {
@@ -1356,6 +1380,39 @@
           try { return JSON.parse(match[0]); } catch (e2) { return null; }
         }
         return null;
+      }
+    }
+
+    /**
+     * 單次 Gemini JSON 呼叫（不死等，逾時即返回讓上層秒切備援）
+     */
+    async function invokeGeminiSingle({ model, userParts, systemPrompt, thinkingLevel, timeoutMs }) {
+      try {
+        const response = await fetchWithTimeout(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            contents: [{ role: 'user', parts: userParts }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingLevel }
+            },
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        }, timeoutMs);
+
+        if (response.ok) {
+          const apiResult = await response.json();
+          const rawText = apiResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          return { ok: true, rawText, model };
+        }
+
+        let errorBody = null;
+        try { errorBody = await response.json(); } catch (e) {}
+        return { ok: false, response, err: null, errorBody, model };
+      } catch (err) {
+        return { ok: false, response: null, err, errorBody: null, model };
       }
     }
 
@@ -1436,12 +1493,11 @@
         '7. Return ONLY clean numbered lines (1. ..., 2. ...), with NO markdown blocks or extra commentary.'
       ].join('\n');
 
-      const attempts = 2;
       let lastResponse = null;
       let lastErr = null;
       let lastErrorBody = null;
 
-      for (let attempt = 1; attempt <= attempts; attempt++) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const response = await fetchWithTimeout(API_URL, {
             method: 'POST',
@@ -1475,7 +1531,7 @@
         } catch (err) {
           lastErr = err;
         }
-        if (attempt < attempts) await new Promise(r => setTimeout(r, 1500));
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
       }
       return { success: false, error: classifyApiError(lastResponse, lastErr, lastErrorBody) };
     }
@@ -1809,7 +1865,7 @@
     });
 
     // ==========================================
-    // 11. 真・雙階段盲讀批改引擎（Gemini 3.8 Flash + 即時讀秒）
+    // 11. 真・雙階段盲讀批改引擎（3.6 Flash 預設 + 自動備援 3.5 Lite + 讀秒）
     // ==========================================
     function showGradingStatus(title, detail, isError) {
       gradingStatusContainer.classList.remove('hidden');
@@ -2037,7 +2093,7 @@
     }
 
     /**
-     * 雙階段批改主流程（含分階段讀秒記錄）
+     * 雙階段批改主流程（含自動備援降級 + 分階段讀秒）
      */
     async function executeTwoPassGrading(pages) {
       lastGradingPagesContext = pages;
@@ -2048,21 +2104,22 @@
 
       const targetAnswers = dictationQueue.length > 0 ? dictationQueue : originalWords;
       const includePunct = optGradePunctuation.checked;
-      const pass2Level = optDeepStrokeCheck.checked ? 'MEDIUM' : 'LOW';
+      const selectedModel = gradingModelSelect.value || 'gemini-3.6-flash';
+      const deepMode = optDeepStrokeCheck.checked;
 
-      // 啟動整體即時讀秒器
+      // 啟動即時讀秒器
       stopGradingTimer();
       gradingTimerHandle = startLiveTimer(gradingLiveTimer, 0);
 
-      // ========== PASS 1：100% 盲讀手寫作業（3.8 Flash LOW）==========
+      // ========== PASS 1：100% 盲讀手寫作業 ==========
       showGradingStatus(
-        '步驟 1/2：3.8 Flash 盲讀手寫筆跡中...',
+        '步驟 1/2：' + formatModelShortName(selectedModel) + ' 盲讀手寫筆跡...',
         '共 ' + pages.length + ' 頁高清相片（' + totalKB + 'KB）· 不參考答案，專捉格仔留空漏字...',
         false
       );
 
       const t1Start = performance.now();
-      const pass1 = await callPass1BlindOCR(pages);
+      const pass1 = await callPass1BlindOCR(pages, selectedModel);
       const pass1Sec = (performance.now() - t1Start) / 1000;
 
       if (!pass1.success) {
@@ -2070,6 +2127,10 @@
         showGradingStatus('盲讀失敗：' + pass1.error.title, pass1.error.detail, true);
         return;
       }
+
+      // 如果步驟 1 已經觸發備援（代表所選主力模型目前塞車），步驟 2 直接沿用暢通的備援模型，唔再浪費時間等
+      const activePass2Model = pass1.usedFallback ? FALLBACK_GRADING_MODEL : selectedModel;
+      const pass2Level = deepMode ? 'MEDIUM' : (activePass2Model === FALLBACK_GRADING_MODEL ? 'MEDIUM' : 'LOW');
 
       const blindText = pass1.text;
       const aligned = alignStandardAndBlind(targetAnswers, blindText, includePunct);
@@ -2090,15 +2151,15 @@
         });
       });
 
-      // ========== PASS 2：視覺重點覆核 + 記字口訣（3.8 Flash LOW / MEDIUM）==========
+      // ========== PASS 2：視覺重點覆核 + 記字口訣 ==========
       showGradingStatus(
-        '步驟 2/2：3.8 Flash 重點覆核與寫口訣...',
+        '步驟 2/2：' + formatModelShortName(activePass2Model) + ' 重點覆核與寫口訣...',
         '盲讀已完成（' + pass1Sec.toFixed(1) + 's）· 正核對 ' + candidateIssues.length + ' 處差異（' + pass2Level + '）...',
         false
       );
 
       const t2Start = performance.now();
-      const pass2 = await callPass2VerifyAndTips(pages, candidateIssues, pass2Level);
+      const pass2 = await callPass2VerifyAndTips(pages, candidateIssues, activePass2Model, pass2Level);
       const pass2Sec = (performance.now() - t2Start) / 1000;
       const totalSec = stopGradingTimer();
 
@@ -2144,6 +2205,9 @@
         }
       }
 
+      const usedFallback = pass1.usedFallback || pass2.usedFallback;
+      const finalModelId = pass2.modelUsed || pass1.modelUsed || selectedModel;
+
       hideGradingStatus();
       currentReportModel = {
         items: aligned.items,
@@ -2155,7 +2219,8 @@
           pass1Sec,
           pass2Sec,
           pass2Success: pass2.success,
-          pass2Level
+          pass2Level,
+          modelLabel: formatModelShortName(finalModelId) + (usedFallback ? '（自動接手）' : '')
         }
       };
       blindOcrPreview.textContent = blindText || '（無內容）';
@@ -2169,9 +2234,9 @@
     });
 
     /**
-     * PASS 1：100% 盲讀 OCR（Gemini 3.8 Flash · LOW）
+     * PASS 1：100% 盲讀 OCR（逾時 / 塞車立即自動切換 3.5 Flash-Lite 接手）
      */
-    async function callPass1BlindOCR(pages) {
+    async function callPass1BlindOCR(pages, primaryModel) {
       const systemPrompt = [
         'You are a literal, objective handwriting OCR scanner for Hong Kong primary school grid-paper notebooks (中文格仔簿 / 英文橫線簿).',
         'You have NO answer key. Your ONLY job is to accurately transcribe the exact handwritten characters/words visible on the page(s) in natural reading order.',
@@ -2192,54 +2257,67 @@
         userParts.push({ inlineData: { mimeType: p.mimeType || 'image/jpeg', data: p.base64 } });
       });
 
-      let lastResponse = null;
-      let lastErr = null;
-      let lastErrorBody = null;
-
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const response = await fetchWithTimeout(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: GRADING_MODEL,
-              contents: [{ role: 'user', parts: userParts }],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingLevel: 'LOW' }
-              },
-              systemInstruction: { parts: [{ text: systemPrompt }] }
-            })
-          }, GRADING_PASS1_TIMEOUT_MS);
-
-          if (response.ok) {
-            const apiResult = await response.json();
-            const rawText = apiResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-            const parsed = extractJsonSafe(rawText);
-            if (parsed && typeof parsed.fullText === 'string' && parsed.fullText.trim().length > 0) {
-              return { success: true, text: parsed.fullText.trim() };
-            }
-            if (rawText.length > 0) {
-              return { success: true, text: rawText };
-            }
-            lastErr = new Error('盲讀回傳內容為空');
-          } else {
-            lastResponse = response;
-            try { lastErrorBody = await response.json(); } catch (e) { lastErrorBody = null; }
-            if (response.status >= 400 && response.status < 500 && response.status !== 429) break;
-          }
-        } catch (err) {
-          lastErr = err;
+      const parseResult = (res) => {
+        if (!res.ok) return null;
+        const parsed = extractJsonSafe(res.rawText);
+        if (parsed && typeof parsed.fullText === 'string' && parsed.fullText.trim().length > 0) {
+          return parsed.fullText.trim();
         }
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+        return res.rawText.length > 0 ? res.rawText : null;
+      };
+
+      // Flash-Lite 盲讀使用 MEDIUM 思考以提升格仔空格辨識力；3.6 / 3.8 用 LOW 保持高速
+      const primaryLevel = primaryModel === FALLBACK_GRADING_MODEL ? 'MEDIUM' : 'LOW';
+      const firstRes = await invokeGeminiSingle({
+        model: primaryModel,
+        userParts,
+        systemPrompt,
+        thinkingLevel: primaryLevel,
+        timeoutMs: PRIMARY_GRADING_TIMEOUT_MS
+      });
+
+      const firstText = parseResult(firstRes);
+      if (firstText) {
+        return { success: true, text: firstText, modelUsed: primaryModel, usedFallback: false };
       }
-      return { success: false, error: classifyApiError(lastResponse, lastErr, lastErrorBody) };
+
+      // 若本身不是 3.5 Lite，遇到逾時 / 連線中斷 / 5xx / 429 即刻秒切 3.5 Flash-Lite 備援！
+      const shouldFallback = primaryModel !== FALLBACK_GRADING_MODEL && (
+        !firstRes.response ||
+        firstRes.response.status >= 500 ||
+        firstRes.response.status === 429 ||
+        firstRes.response.status === 404
+      );
+
+      if (shouldFallback) {
+        showGradingStatus(
+          '⚠️ ' + formatModelShortName(primaryModel) + ' 繁忙，自動改用 3.5 Lite 接手...',
+          '偵測到主力模型塞車或逾時，已即時切換極速引擎完成盲讀...',
+          false
+        );
+
+        const fbRes = await invokeGeminiSingle({
+          model: FALLBACK_GRADING_MODEL,
+          userParts,
+          systemPrompt,
+          thinkingLevel: 'MEDIUM',
+          timeoutMs: FALLBACK_GRADING_TIMEOUT_MS
+        });
+
+        const fbText = parseResult(fbRes);
+        if (fbText) {
+          return { success: true, text: fbText, modelUsed: FALLBACK_GRADING_MODEL, usedFallback: true };
+        }
+        return { success: false, error: classifyApiError(fbRes.response, fbRes.err, fbRes.errorBody) };
+      }
+
+      return { success: false, error: classifyApiError(firstRes.response, firstRes.err, firstRes.errorBody) };
     }
 
     /**
-     * PASS 2：重點視覺覆核候選錯誤 + 錯筆畫複檢 + 15 字內記字口訣（Gemini 3.8 Flash）
+     * PASS 2：重點視覺覆核候選錯誤 + 錯筆畫複檢 + 15 字內記字口訣（附自動備援）
      */
-    async function callPass2VerifyAndTips(pages, candidateIssues, thinkingLevel) {
+    async function callPass2VerifyAndTips(pages, candidateIssues, primaryModel, thinkingLevel) {
       const systemPrompt = [
         'You are a careful Hong Kong primary school teacher performing Step 2 visual verification on a student\'s handwritten dictation.',
         'Step 1 already performed a BLIND OCR (without standard answers) and mathematically aligned it against the standard answers to produce CANDIDATE ISSUES.',
@@ -2274,31 +2352,41 @@
         userParts.push({ inlineData: { mimeType: p.mimeType || 'image/jpeg', data: p.base64 } });
       });
 
-      try {
-        const response = await fetchWithTimeout(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: GRADING_MODEL,
-            contents: [{ role: 'user', parts: userParts }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              thinkingConfig: { thinkingLevel: thinkingLevel || 'LOW' }
-            },
-            systemInstruction: { parts: [{ text: systemPrompt }] }
-          })
-        }, GRADING_PASS2_TIMEOUT_MS);
+      const firstRes = await invokeGeminiSingle({
+        model: primaryModel,
+        userParts,
+        systemPrompt,
+        thinkingLevel: thinkingLevel || 'LOW',
+        timeoutMs: PRIMARY_GRADING_TIMEOUT_MS
+      });
 
-        if (response.ok) {
-          const apiResult = await response.json();
-          const rawText = apiResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-          const parsed = extractJsonSafe(rawText);
-          if (parsed) return { success: true, data: parsed };
-        }
-      } catch (e) {
-        // 若 Pass 2 逾時，安全退回顯示 Pass 1 + JS 精準對齊結果
+      if (firstRes.ok) {
+        const parsed = extractJsonSafe(firstRes.rawText);
+        if (parsed) return { success: true, data: parsed, modelUsed: primaryModel, usedFallback: false };
       }
-      return { success: false, data: null };
+
+      if (primaryModel !== FALLBACK_GRADING_MODEL) {
+        showGradingStatus(
+          '⚠️ 覆核自動切換 3.5 Lite 極速完成...',
+          '正由備援引擎核對差異並生成 15 字記字口訣...',
+          false
+        );
+
+        const fbRes = await invokeGeminiSingle({
+          model: FALLBACK_GRADING_MODEL,
+          userParts,
+          systemPrompt,
+          thinkingLevel: 'LOW',
+          timeoutMs: FALLBACK_GRADING_TIMEOUT_MS
+        });
+
+        if (fbRes.ok) {
+          const parsed = extractJsonSafe(fbRes.rawText);
+          if (parsed) return { success: true, data: parsed, modelUsed: FALLBACK_GRADING_MODEL, usedFallback: true };
+        }
+      }
+
+      return { success: false, data: null, modelUsed: primaryModel, usedFallback: false };
     }
 
     /**
@@ -2523,14 +2611,13 @@
       gradingStatsLine.textContent =
         '全對 ' + correctItemCount + '/' + items.length + ' 題 · 錯字 ' + wrongCount + ' · 漏字 ' + omittedCount + ' · 多字 ' + extraCount;
 
-      // 顯示 AI 耗時明細欄
       if (timing) {
         const p2Label = timing.pass2Success
           ? ('覆核 ' + timing.pass2Sec.toFixed(1) + 's')
           : '覆核略過';
         gradingTimingDetail.textContent =
           '⏱️ 總耗時 ' + timing.totalSec.toFixed(1) + ' 秒（盲讀 ' + timing.pass1Sec.toFixed(1) + 's ＋ ' + p2Label + '）';
-        gradingTimingModel.textContent = '3.8 Flash · ' + timing.pass2Level;
+        gradingTimingModel.textContent = timing.modelLabel;
         gradingTimingBar.classList.remove('hidden');
       } else {
         gradingTimingBar.classList.add('hidden');
@@ -2571,10 +2658,15 @@
     // 12. 初始化
     // ==========================================
     window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const savedModel = localStorage.getItem(MODEL_PREF_KEY);
+        if (savedModel && Array.from(gradingModelSelect.options).some(o => o.value === savedModel)) {
+          gradingModelSelect.value = savedModel;
+        }
+      } catch (e) {}
       renderSavedLists();
       checkInputLanguageAndSegment();
     });
   </script>
 </body>
 </html>
-```
